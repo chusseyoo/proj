@@ -5,7 +5,6 @@ from users.models import User
 class Attendance(models.Model):
 	STATUS_CHOICES = (
 		('present', 'Present'),
-		('late', 'Late'),
 		('absent', 'Absent'),
 	)
 	session = models.ForeignKey(Session, on_delete=models.CASCADE)
