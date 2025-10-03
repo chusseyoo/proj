@@ -1,5 +1,5 @@
 from django.db import models
-from sessions.models import Session
+from session.models import Session
 from users.models import User
 
 class Attendance(models.Model):
