@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +41,7 @@ INSTALLED_APPS = [
     # Project apps
     'users',
     'courses',
-    'sessions',
+    'session',
     'attendance',
     'reports',
 ]
@@ -121,6 +122,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+MEDIA_DIRS = [
+    MEDIA_ROOT / 'qr_codes',
+    MEDIA_ROOT / 'reports',
+]
+for directory in MEDIA_DIRS:
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
 
 # Default primary key field type
 # Default primary key field type
