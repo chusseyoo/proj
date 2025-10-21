@@ -134,5 +134,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom user model - will be set after user_management app is created
-# AUTH_USER_MODEL = 'user_management.User'
+# Custom user model
+AUTH_USER_MODEL = 'user_management.User'
