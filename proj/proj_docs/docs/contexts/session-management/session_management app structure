@@ -1,0 +1,48 @@
+session_management/
+├── domain/ # Core business logic and rules
+│   ├── entities/
+│   │   # Domain entities representing core objects
+│   │   └── session.py
+│   ├── services/
+│   │   # Domain services encapsulating business logic
+│   │   └── session_rules.py
+│   ├── value_objects/
+│   │   # Immutable domain value objects
+│   │   └── location.py
+│   └── exceptions.py
+├── application/ # Orchestrates use cases and workflows
+│   ├── use_cases/
+│   │   # Application services/use cases
+│   │   ├── create_session.py
+│   │   └── list_active_sessions.py
+│   ├── dto/
+│   │   # Data Transfer Objects for moving data between layers
+│   │   └── session_dto.py
+│   └── commands_queries.py
+├── infrastructure/ # Technical implementation: persistence, adapters, external services
+│   ├── repositories/
+│   │   # Repository implementations for persistence
+│   │   └── session_repository.py
+│   ├── orm/
+│   │   # ORM models for database mapping
+│   │   └── django_models.py
+│   └── geo_utils/
+│       # Shared utilities for geolocation, etc.
+│       └── haversine.py             # optional shared util
+├── interfaces/ # Adapters for external systems and entry points
+│   ├── api/
+│   │   # REST API layer
+│   │   ├── views.py
+│   │   ├── serializers.py
+│   │   └── urls.py
+│   └── admin/
+│       # Admin interface logic (e.g., scheduler hooks)
+│       └── scheduler_hooks.py       # triggers to send notifications
+├── tests/ # Automated tests for all layers
+│   ├── domain/
+│   ├── application/
+│   └── integration/
+└── README.md
+
+# Admin Interface
+The admin interface is handled in `interfaces/admin/scheduler_hooks.py`. Here, you can implement admin-specific logic, such as scheduling triggers or hooks for notifications. If using Django's admin, you would register ORM models (from `infrastructure/orm/django_models.py`) and customize them as needed. This keeps admin logic separate from API and domain logic, while leveraging Django's admin features or custom admin workflows for managing sessions and related tasks.

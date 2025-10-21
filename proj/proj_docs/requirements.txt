@@ -1,0 +1,38 @@
+# Core Django Framework
+Django>=4.2,<5.0
+djangorestframework>=3.14.0
+
+# Authentication & Security
+PyJWT>=2.8.0
+cryptography>=41.0.0
+
+# Database Drivers (choose one based on your database)
+psycopg2-binary>=2.9.9  # PostgreSQL
+# mysqlclient>=2.2.0    # Uncomment for MySQL
+
+# Async Task Processing
+celery>=5.3.0
+redis>=5.0.0  # Celery broker/backend
+
+# Email
+# Uses Django's built-in SMTP (no additional package needed)
+
+# Data Export
+openpyxl>=3.1.0  # Excel export
+
+# Utilities
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# GPS Distance Calculation (Haversine)
+# Can be implemented without external library, or use:
+# haversine>=2.8.0  # Optional, if you prefer library over custom implementation
+
+# Validation
+email-validator>=2.1.0  # RFC 5322 email validation
+
+# CORS (if needed for frontend)
+django-cors-headers>=4.3.0
+
+# Environment Variables
+python-decouple>=3.8  # For managing settings/secrets

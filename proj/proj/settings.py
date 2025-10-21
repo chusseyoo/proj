@@ -39,11 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Project apps
-    'users',
-    'courses',
-    'session',
-    'attendance',
-    'reports',
+    'user_management',
+    'academic_structure',
+    'session_management',
+    'attendance_recording',
+    'reporting',
+    'email_notifications',
 ]
 
 MIDDLEWARE = [
@@ -139,5 +140,5 @@ for directory in MEDIA_DIRS:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom user model
-AUTH_USER_MODEL = 'users.User'
+# Custom user model - will be set after user_management app is created
+# AUTH_USER_MODEL = 'user_management.User'

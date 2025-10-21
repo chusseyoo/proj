@@ -1,0 +1,48 @@
+user_management/
+├── domain/ # Core business logic and rules
+│   ├── entities/ # Domain entities representing core objects
+│   │   ├── user.py
+│   │   ├── student_profile.py
+│   │   └── lecturer_profile.py
+│   ├── services/ # Domain services encapsulating business logic
+│   │   ├── identity_service.py
+│   │   └── enrollment_service.py
+│   ├── value_objects/ # Immutable domain value objects
+│   │   ├── student_id.py
+│   │   └── email.py # Email validation following RFC 5322 standard format
+│   └── exceptions.py
+├── application/ # Orchestrates use cases and workflows
+│   ├── use_cases/ # Application services/use cases
+│   │   ├── create_user.py
+│   │   ├── update_profile.py
+│   │   ├── deactivate_user.py
+│   │   └── update_lecturer_profile.py
+│   ├── dto/ # Data Transfer Objects for moving data between layers
+│   │   ├── user_dto.py
+│   │   ├── student_profile_dto.py
+│   │   └── lecturer_profile_dto.py
+│   └── commands_queries.py
+├── infrastructure/ # Technical implementation: persistence, adapters, external services
+│   ├── orm/ # ORM models for database mapping
+│   │   └── django_models.py
+│   ├── repositories/ # Repository implementations for persistence
+│   │   ├── user_repository.py
+│   │   ├── student_profile_repository.py
+│   │   └── lecturer_profile_repository.py
+│   └── auth_adapter/
+│       └── jwt_adapter.py
+├── interfaces/ # Adapters for external systems and entry points
+│   ├── api/ # Entry points: APIs, admin interfaces
+│   │   ├── views.py
+│   │   ├── serializers.py
+│   │   └── urls.py
+│   └── admin/ # Admin interface
+│       └── admin_views.py
+├── tests/ # Automated tests for all layers
+│   ├── domain/
+│   ├── application/
+│   └── infrastructure/
+└── README.md
+
+# Admin Interface
+The admin interface is handled in `interfaces/admin/admin_views.py`. Here, you can register ORM models (from `infrastructure/orm/django_models.py`) with Django's admin site and customize them using ModelAdmin classes. This keeps admin logic separate from API and domain logic, while leveraging Django's built-in admin features for managing users, students, and lecturers.
