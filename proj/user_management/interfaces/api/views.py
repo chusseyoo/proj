@@ -89,9 +89,10 @@ class LoginView(APIView):
         return Response(result, status=status.HTTP_200_OK)
     
     def _get_auth_service(self):
+        user_repo = UserRepository()
         return AuthenticationService(
-            user_repository=UserRepository(),
-            password_service=PasswordService(),
+            user_repository=user_repo,
+            password_service=PasswordService(user_repository=user_repo),
             student_repository=StudentProfileRepository(),
             refresh_store=None,
         )
@@ -167,14 +168,15 @@ class RegisterLecturerView(APIView):
         return Response(response_data, status=status.HTTP_201_CREATED)
     
     def _get_registration_service(self):
+        user_repo = UserRepository()
         return RegistrationService(
-            user_repository=UserRepository(),
+            user_repository=user_repo,
             student_repository=StudentProfileRepository(),
             lecturer_repository=LecturerProfileRepository(),
-            password_service=PasswordService(),
+            password_service=PasswordService(user_repository=user_repo),
             authentication_service=AuthenticationService(
-                user_repository=UserRepository(),
-                password_service=PasswordService(),
+                user_repository=user_repo,
+                password_service=PasswordService(user_repository=user_repo),
                 student_repository=StudentProfileRepository(),
                 refresh_store=None,
             ),
@@ -218,14 +220,15 @@ class RegisterStudentView(APIView):
         return Response(response_data, status=status.HTTP_201_CREATED)
     
     def _get_registration_service(self):
+        user_repo = UserRepository()
         return RegistrationService(
-            user_repository=UserRepository(),
+            user_repository=user_repo,
             student_repository=StudentProfileRepository(),
             lecturer_repository=LecturerProfileRepository(),
-            password_service=PasswordService(),
+            password_service=PasswordService(user_repository=user_repo),
             authentication_service=AuthenticationService(
-                user_repository=UserRepository(),
-                password_service=PasswordService(),
+                user_repository=user_repo,
+                password_service=PasswordService(user_repository=user_repo),
                 student_repository=StudentProfileRepository(),
                 refresh_store=None,
             ),
@@ -266,14 +269,15 @@ class RegisterAdminView(APIView):
         return Response(response_data, status=status.HTTP_201_CREATED)
     
     def _get_registration_service(self):
+        user_repo = UserRepository()
         return RegistrationService(
-            user_repository=UserRepository(),
+            user_repository=user_repo,
             student_repository=StudentProfileRepository(),
             lecturer_repository=LecturerProfileRepository(),
-            password_service=PasswordService(),
+            password_service=PasswordService(user_repository=user_repo),
             authentication_service=AuthenticationService(
-                user_repository=UserRepository(),
-                password_service=PasswordService(),
+                user_repository=user_repo,
+                password_service=PasswordService(user_repository=user_repo),
                 student_repository=StudentProfileRepository(),
                 refresh_store=None,
             ),

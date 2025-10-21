@@ -79,7 +79,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
         """Instantiate AuthenticationService with dependencies."""
         user_repo = UserRepository()
         student_repo = StudentProfileRepository()
-        password_service = PasswordService()
+        password_service = PasswordService(user_repository=user_repo)
         
         return AuthenticationService(
             user_repository=user_repo,

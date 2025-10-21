@@ -71,9 +71,14 @@ class RegistrationService:
             )
         )
 
-        # Login to return tokens
+        # Login to return tokens (avoid overwriting 'user' key from login response)
         tokens = self.authentication_service.login(email, lecturer_data['password'])
-        return {'user': user, 'lecturer_profile': profile, **tokens}
+        return {
+            'user': user,
+            'lecturer_profile': profile,
+            'access_token': tokens.get('access_token'),
+            'refresh_token': tokens.get('refresh_token'),
+        }
 
     @transaction.atomic
     def register_student(self, student_data: Dict, admin_user: User) -> Dict:
