@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # App URLs will be added after apps are created
+    path('api/users/', include('user_management.interfaces.api.urls')),
 ]
 
 if settings.DEBUG:
