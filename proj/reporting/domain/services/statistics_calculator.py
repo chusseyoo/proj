@@ -23,10 +23,22 @@ def compute_statistics(rows: Iterable[Mapping[str, object]]) -> dict:
     present_pct = (present / total * 100.0) if total else 0.0
     absent_pct = (absent / total * 100.0) if total else 0.0
 
+    # diagnostic counts: within_radius / outside_radius based on row diagnostics
+    within_radius_count = 0
+    outside_radius_count = 0
+    for r in rows:
+        wr = r.get("within_radius") if isinstance(r, dict) else getattr(r, "within_radius", None)
+        if wr is True:
+            within_radius_count += 1
+        elif wr is False:
+            outside_radius_count += 1
+
     return {
         "total_students": total,
         "present_count": present,
         "present_percentage": round(present_pct, 2),
         "absent_count": absent,
         "absent_percentage": round(absent_pct, 2),
+        "within_radius_count": within_radius_count,
+        "outside_radius_count": outside_radius_count,
     }
