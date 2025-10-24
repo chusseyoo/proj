@@ -108,10 +108,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       "total_students": 50,
       "present_count": 35,
       "present_percentage": 70.0,
-      "late_count": 8,
-      "late_percentage": 16.0,
-      "absent_count": 7,
-      "absent_percentage": 14.0,
+      "absent_count": 15,
+      "absent_percentage": 30.0,
       "within_radius_count": 40,
       "outside_radius_count": 3
     },
@@ -148,6 +146,16 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   }
 }
 ```
+  Important: Official classification rule
+
+   - A student is classified as "Present" in the `status` field only when ALL of the following are true:
+     1. An attendance record exists for that student for the session.
+     2. The attendance `time_recorded` is within the session window (>= `time_created` and <= `time_ended`).
+     3. `within_radius` is `true` for that attendance record.
+
+   - Any attendance records that fail either the time-window check or the radius check are retained in the `students` rows for diagnostics (you will still see `time_recorded`, `within_radius`, `latitude`, `longitude`) but such records DO NOT count toward the official `present_count` in `statistics`. Use `within_radius` and `time_recorded` for diagnostic filtering if you need to reconcile records.
+
+   - In short: present_count = number of distinct students with at least one attendance record meeting (time window AND within_radius==true). Other counts such as `within_radius_count` are diagnostic and may differ from `present_count`.
 
 **Response Fields**:
 
@@ -209,6 +217,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ---
 
 #### 404 Not Found - Session Doesn't Exist
+
+
+Notes on `statistics` fields:
+
+- `present_count`: official count of students classified as Present under the canonical rule (attendance exists AND time within session window AND `within_radius` == true).
+- `within_radius_count`: diagnostic count of attendance records with `within_radius` == true (may include records outside the session time window).
+- `outside_radius_count`: diagnostic count of attendance records with `within_radius` == false.
 
 **Scenario**: Invalid session_id
 

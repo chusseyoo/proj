@@ -1,6 +1,6 @@
 # services_guide.md
 
-Brief: Complete service specification for Reporting context. Three focused services: ReportService (orchestration), AttendanceAggregator (classify Present/Late/Absent), and ExportService (CSV/Excel generation). Focus on business logic, cross-context data collection, file generation, and access control validation.
+Brief: Complete service specification for Reporting context. Three focused services: ReportService (orchestration), AttendanceAggregator (classify Present/Absent), and ExportService (CSV/Excel generation). Focus on business logic, cross-context data collection, file generation, and access control validation.
 
 ---
 
@@ -22,7 +22,7 @@ Brief: Complete service specification for Reporting context. Three focused servi
 ## Three Services Pattern
 
 1. **ReportService** - Report generation orchestration and authorization
-2. **AttendanceAggregator** - Classify students as Present/Late/Absent
+2. **AttendanceAggregator** - Classify students as Present/Absent
 3. **ExportService** - CSV and Excel file generation
 
 **Why Separate**:
@@ -222,7 +222,7 @@ if user.role == "admin":
 
 **File**: `services/attendance_aggregator.py`
 
-**Purpose**: Classify students as Present, Late, or Absent based on attendance data
+**Purpose**: Classify students as Present or Absent based on attendance data (retain diagnostics such as original status and within-radius flag)
 
 **Dependencies**: None (pure logic)
 
@@ -247,9 +247,13 @@ if user.role == "admin":
    ```
 
 2. **For each eligible student**:
-   - Check if attendance exists in map
-   - If exists: Classify as Present or Late
-   - If not exists: Classify as Absent
+    - Check if an attendance record exists in the lookup map
+    - If an attendance record exists, verify both:
+      - the attendance timestamp falls within the session time window, and
+      - `is_within_radius` is True
+      - If both are true → classify as **Present** (include time/location/status as diagnostics)
+      - Otherwise → classify as **Absent** (the attendance record may be kept for audit/diagnostics but does not count as Present)
+    - If no attendance record exists → classify as **Absent**
 
 3. **Return list of student rows**
 
@@ -290,33 +294,46 @@ if user.role == "admin":
 
 ---
 
-### classify_single_student(student: StudentProfile, attendance: Attendance | None) → str
+### classify_single_student(student: StudentProfile, attendance: Attendance | None, session_start: datetime, session_end: datetime) → str
 
-**Purpose**: Determine single student's status
+**Purpose**: Determine a single student's presence classification using strict rules (time window + radius)
 
 **Logic**:
 ```python
-if attendance is None:
-    return "Absent"
-elif attendance.status == "present" and attendance.is_within_radius:
+def classify_single_student(student, attendance, session_start, session_end):
+    # No attendance record → Absent
+    if attendance is None:
+        return "Absent"
+
+    # Attendance exists: check radius
+    if not getattr(attendance, "is_within_radius", False):
+        return "Absent"
+
+    # Check attendance timestamp within session scheduled window
+    att_ts = getattr(attendance, "timestamp", None) or getattr(attendance, "time_recorded", None)
+    if att_ts is None:
+        # Missing timestamp treated as Absent for official reporting
+        return "Absent"
+
+    if not (session_start <= att_ts <= session_end):
+        return "Absent"
+
+    # All checks passed → Present
     return "Present"
-else:
-    return "Late"  # Either status="late" or outside radius
 ```
 
-**Returns**: "Present", "Late", or "Absent"
+**Returns**: "Present" or "Absent"
 
 **Classification Rules**:
 
-| Attendance Exists | status | is_within_radius | Final Status |
-|-------------------|--------|------------------|--------------|
+| Attendance Exists | Within Time Window | is_within_radius | Final Status |
+|-------------------|--------------------:|------------------:|--------------|
 | No | - | - | **Absent** |
-| Yes | "present" | True | **Present** |
-| Yes | "present" | False | **Late** |
-| Yes | "late" | True | **Late** |
-| Yes | "late" | False | **Late** |
+| Yes | No | any | **Absent** |
+| Yes | Yes | False | **Absent** |
+| Yes | Yes | True | **Present** |
 
-**Why Important**: Consistent status classification
+**Why Important**: This enforces the policy that only attendances recorded within the scheduled session window and within the allowed GPS radius count as Present. Any other recorded attendance is treated as Absent for official reporting; such records can still be retained for diagnostics/audit.
 
 **Priority: CRITICAL** - Business rule enforcement
 
@@ -472,7 +489,7 @@ BCS/234345,Jane Smith,jane@example.com,Computer Science,Stream A,Absent,,,,,
 # Date: 2025-10-19 08:00-10:00
 # Lecturer: Dr. Jane Smith
 # Generated: 2025-10-19 14:30:22 by Dr. Jane Smith
-# Total Students: 50 | Present: 35 (70%) | Late: 8 (16%) | Absent: 7 (14%)
+# Total Students: 50 | Present: 35 (70%) | Absent: 15 (30%)
 #
 ```
 
@@ -497,12 +514,11 @@ BCS/234345,Jane Smith,jane@example.com,Computer Science,Stream A,Absent,,,,,
 **Sheet 2: "Attendance Data"**
 - Header row (bold, background color)
 - Data rows with conditional formatting:
-  - "Present" → Green background
-  - "Late" → Yellow background
-  - "Absent" → Red background
-- "Within Radius" column:
-  - "Yes" → Green text
-  - "No" → Red text
+    - "Present" → Green background
+    - "Absent" → Red background
+    - "Within Radius" column:
+    - "Yes" → Green text
+    - "No" → Red text
 
 **Why Important**: Professional presentation, color-coded status
 
@@ -694,7 +710,7 @@ reporting/
 ## Key Takeaways
 
 1. **Three focused services** - Report, Aggregator, Export
-2. **Clear classification rules** - Present/Late/Absent logic
+2. **Clear classification rules** - Present/Absent logic (retain diagnostics)
 3. **Authorization enforcement** - Lecturer vs admin access
 4. **File generation** - CSV and Excel with formatting
 5. **Orchestration pattern** - Coordinate multiple repos/contexts

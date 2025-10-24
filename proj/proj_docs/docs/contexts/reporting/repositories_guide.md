@@ -386,7 +386,7 @@ filter(session_id=session_id)
 select_related('student_profile__user')
 ```
 
-**Why Important**: Determines "Present" and "Late" students
+**Why Important**: Returns raw attendance records for the session. The repository provides the raw data; the service layer (AttendanceAggregator) is responsible for applying the official Present/Absent rules (attendance timestamp within the session time window AND `is_within_radius == True`) when deciding which records count as Present for the report.
 
 **Priority: CRITICAL** - Core attendance data
 
@@ -396,37 +396,54 @@ select_related('student_profile__user')
 
 ## get_attendance_statistics(session_id: int) → dict
 
-**Purpose**: Calculate attendance summary statistics
+**Purpose**: Calculate attendance summary statistics using the official Present/Absent policy
 
 **Returns**: Dictionary with counts and percentages:
 ```python
 {
     "total_students": 50,
     "present_count": 35,
-    "late_count": 8,
-    "absent_count": 7,
+    "absent_count": 15,
     "present_percentage": 70.0,
-    "late_percentage": 16.0,
-    "absent_percentage": 14.0,
-    "within_radius_count": 40,
-    "outside_radius_count": 3
+    "absent_percentage": 30.0,
+    "within_radius_count": 40,        # diagnostic
+    "outside_radius_count": 3        # diagnostic
 }
 ```
 
 **Logic**:
 1. Get eligible students count (total)
-2. Get attendance records:
-   - Count where `status="present"` (present_count)
-   - Count where `status="late"` (late_count)
-3. Calculate absent: `total - (present + late)`
-4. Calculate percentages
-5. Count `is_within_radius=True` vs `False`
+2. Compute `present_count` by counting distinct eligible students who have at least one attendance record for the session that satisfies BOTH:
+   - attendance timestamp is within the session's scheduled start and end times, and
+   - `is_within_radius` is True
 
-**Why Important**: Report summary header
+   Example Django ORM sketch (assumes session_start/session_end are available):
+   ```python
+   present_qs = (
+       Attendance.objects
+       .filter(session_id=session_id,
+               is_within_radius=True,
+               timestamp__gte=session_start,
+               timestamp__lte=session_end)
+       .values('student_profile_id')
+       .distinct()
+   )
+   present_count = present_qs.count()
+   ```
+
+3. Calculate absent: `absent_count = total - present_count` (official absent count uses the strict present_count above)
+4. Calculate percentages (guard against division by zero)
+5. Optionally compute diagnostic aggregations:
+   - `within_radius_count`: count of attendance records for session with `is_within_radius=True` (regardless of timestamp)
+   - `outside_radius_count`: count of attendance records with `is_within_radius=False`
+
+   These diagnostics are useful for troubleshooting (e.g., many outside-radius hits), but do not change the official Present/Absent counts.
+
+**Why Important**: Report summary header. Ensure `present_count` follows the official policy (in-time and in-radius) so reported percentages and counts match institutional rules.
 
 **Priority: HIGH**
 
-**Performance**: Use Django aggregation (`Count()`) for efficiency
+**Performance**: Use Django aggregation (`Count()`), `.values(...).distinct()` and appropriate indexes for efficiency
 
 ---
 
