@@ -18,6 +18,12 @@ class ReportRepositoryPort(Protocol):
     def get_attendance_for_session(self, session_id: int) -> List[Any]:
         """Return raw attendance records for the session."""
 
+    # Notes on expected shapes (informational):
+    # - session object: mapping with at least `id`, `owner_id`, `start_time`, `end_time`
+    # - student objects: mapping with at least `student_id`, `student_name`, optional email/program/stream
+    # - attendance record: mapping with keys `student_id`, `time_recorded` (datetime or ISO string),
+    #   `within_radius` (bool), `latitude`, `longitude`, `status`
+
     def create_report(self, session_id: int, generated_by: int, metadata: Dict[str, Any]) -> Any:
         """Persist a report record and return a domain Report or its id."""
 
