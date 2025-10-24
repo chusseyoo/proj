@@ -376,7 +376,7 @@ Report
 **Dependency**: Get attendance records for session
 
 **Data Needed**:
-- Student attendance existence (for Present/Late/Absent classification)
+- Student attendance existence (for Present/Absent classification)
 - Attendance details (time_recorded, status, is_within_radius)
 
 **Query Example**: `attendance = Attendance.objects.filter(session=session)`
