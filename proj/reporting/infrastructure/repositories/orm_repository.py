@@ -23,14 +23,23 @@ class OrmReportRepository:
             return None
 
     def update_export_details(self, report_id: int, file_path: str, file_type: str) -> None:
-        r = self.get_report(report_id)
-        if r is None:
-            raise ValueError(f"report {report_id} not found")
-        if r.file_path:
-            raise ValueError("report already exported")
-        r.file_path = file_path
-        r.file_type = file_type
-        r.save(update_fields=["file_path", "file_type"])
+        # Make the update transactional and row-locked to avoid races
+        from django.db import transaction
+
+        with transaction.atomic():
+            try:
+                # lock the row for update to prevent concurrent writers
+                r = Report.objects.select_for_update().get(pk=report_id)
+            except Report.DoesNotExist:
+                raise ValueError(f"report {report_id} not found")
+
+            if r.file_path:
+                # already exported
+                raise ValueError("report already exported")
+
+            r.file_path = file_path
+            r.file_type = file_type
+            r.save(update_fields=["file_path", "file_type"])
 
     def get_report_details(self, report_id: int) -> Optional[Dict[str, Any]]:
         r = self.get_report(report_id)
