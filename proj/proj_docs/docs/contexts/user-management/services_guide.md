@@ -340,8 +340,8 @@ Return: User object with profile
     'user_id': user.user_id,
     'email': user.email,
     'role': user.role,
-    'exp': datetime.utcnow() + timedelta(minutes=15),  # Expiry
-    'iat': datetime.utcnow(),  # Issued at
+    'exp': datetime.now(datetime.timezone.utc) + timedelta(minutes=15),  # Expiry
+    'iat': datetime.now(datetime.timezone.utc),  # Issued at
     'type': 'access'
 }
 ```
@@ -373,8 +373,8 @@ Return: User object with profile
 ```python
 {
     'user_id': user.user_id,
-    'exp': datetime.utcnow() + timedelta(days=7),  # Expiry
-    'iat': datetime.utcnow(),
+    'exp': datetime.now(datetime.timezone.utc) + timedelta(days=7),  # Expiry
+    'iat': datetime.now(datetime.timezone.utc),
     'type': 'refresh'
 }
 ```
@@ -462,7 +462,7 @@ Return: User object with profile
 {
     'student_profile_id': student_profile_id,
     'session_id': session_id,
-    'exp': datetime.utcnow() + timedelta(hours=2),  # 2 hour expiry
+    'exp': datetime.now(datetime.timezone.utc) + timedelta(hours=2),  # 2 hour expiry
     'type': 'attendance'
 }
 ```
@@ -702,7 +702,7 @@ Output: "$2b$12$KIXnKq3Y5Z..."
   ```python
   {
       'user_id': user_id,
-      'exp': datetime.utcnow() + timedelta(hours=1),  # 1 hour expiry
+    'exp': datetime.now(datetime.timezone.utc) + timedelta(hours=1),  # 1 hour expiry
       'type': 'password_reset'
   }
   ```

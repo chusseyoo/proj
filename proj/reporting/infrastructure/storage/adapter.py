@@ -1,9 +1,13 @@
 import os
 import tempfile
-import datetime
 from typing import Optional
 
 from django.conf import settings
+try:
+    from django.utils import timezone
+except Exception:
+    timezone = None
+import datetime
 
 
 class FilesystemStorageAdapter:
@@ -13,7 +17,16 @@ class FilesystemStorageAdapter:
         self.base_dir = base_dir or getattr(settings, "MEDIA_ROOT", "/tmp")
 
     def save_export(self, content_bytes: bytes, filename_hint: str) -> str:
-        now = datetime.datetime.utcnow()
+        # Prefer Django timezone (aware) when Django settings are available,
+        # otherwise fall back to stdlib aware UTC so tests can run without
+        # DJANGO_SETTINGS_MODULE configured.
+        if timezone is not None:
+            try:
+                now = timezone.now()
+            except Exception:
+                now = datetime.datetime.now(datetime.timezone.utc)
+        else:
+            now = datetime.datetime.now(datetime.timezone.utc)
         year = now.year
         month = now.month
         dir_path = os.path.join(self.base_dir, "reports", str(year), f"{month:02d}")

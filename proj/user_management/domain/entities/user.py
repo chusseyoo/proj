@@ -6,7 +6,7 @@ Pure domain representation of a user, independent of persistence layer.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -35,7 +35,7 @@ class User:
     role: UserRole
     is_active: bool = True
     has_password: bool = False
-    date_joined: datetime = field(default_factory=datetime.utcnow)
+    date_joined: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     
     def __post_init__(self):
         """Validate invariants."""

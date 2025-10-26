@@ -6,7 +6,7 @@ in-memory representations used by the application layer.
 """
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from reporting.domain.exceptions import ReportingError
 
@@ -47,7 +47,8 @@ class Report:
         self.file_path = file_path
         self.file_type = file_type
         if generated_date is None:
-            self.generated_date = datetime.utcnow().isoformat()
+            # Use timezone-aware UTC timestamp
+            self.generated_date = datetime.now(timezone.utc).isoformat()
         else:
             self.generated_date = generated_date
         return self
