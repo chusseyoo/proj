@@ -1,3 +1,7 @@
-from django.test import TestCase
+"""Moved into the package `academic_structure/tests/` as `test_topfile.py`.
 
-# Create your tests here.
+This module is left as a placeholder to prevent accidental recreation of
+the old top-level `tests.py` which conflicts with the tests package.
+"""
+
+# See: academic_structure/tests/test_topfile.py
