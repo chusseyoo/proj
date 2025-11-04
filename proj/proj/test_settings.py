@@ -9,6 +9,11 @@ DEBUG = True
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "user_management",
+    "academic_structure",
+    "session_management",
+    "attendance_recording",
+    "email_notifications",
     "reporting",
 ]
 
@@ -26,3 +31,6 @@ MEDIA_ROOT = str(BASE_DIR / "media_test")
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 ROOT_URLCONF = "proj.urls"
+
+# Custom user model
+AUTH_USER_MODEL = "user_management.User"
