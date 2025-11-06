@@ -16,6 +16,8 @@ from .core import (
     CourseCannotBeDeletedError,
     LecturerNotFoundError,
     LecturerInactiveError,
+    InvalidYearError,
+    InvalidDepartmentNameError,
 )
 
 __all__ = [
@@ -34,5 +36,7 @@ __all__ = [
     "CourseCannotBeDeletedError",
     "LecturerNotFoundError",
     "LecturerInactiveError",
+    "InvalidYearError",
+    "InvalidDepartmentNameError",
 ]
 

@@ -63,3 +63,12 @@ class LecturerNotFoundError(NotFoundError):
 
 class LecturerInactiveError(DomainError):
     """Raised when attempting to assign an inactive lecturer to a course."""
+
+
+# Validation exceptions
+class InvalidYearError(ValidationError):
+    """Raised when year of study is out of valid range (1-4)."""
+
+
+class InvalidDepartmentNameError(ValidationError):
+    """Raised when department name doesn't meet validation requirements."""
