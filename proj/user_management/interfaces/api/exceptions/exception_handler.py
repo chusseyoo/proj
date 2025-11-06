@@ -1,5 +1,5 @@
 """
-Exception Handling for DRF API.
+Exception Handling for DRF API - User Management Context.
 
 Maps domain exceptions to HTTP status codes and error responses.
 """
@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 
-from ...domain.exceptions import (
+from ....domain.exceptions import (
     # User exceptions
     UserNotFoundError,
     EmailAlreadyExistsError,
