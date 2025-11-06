@@ -147,7 +147,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'EXCEPTION_HANDLER': 'user_management.interfaces.api.exceptions.custom_exception_handler',
+    # Use global chainer to allow each bounded context to handle its own exceptions
+    'EXCEPTION_HANDLER': 'proj.exception_handler.global_exception_handler',
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
