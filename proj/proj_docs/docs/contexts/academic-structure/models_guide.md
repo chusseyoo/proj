@@ -28,7 +28,7 @@ Represents academic degree programs (e.g., Bachelor of Computer Science). Progra
 | `program_id` | AutoField | `primary_key=True` | Auto-incrementing primary key |
 | `program_name` | CharField | `max_length=200, unique=True, blank=False, null=False` | Full name of program |
 | `program_code` | CharField | `max_length=3, unique=True, blank=False, null=False` | 3-letter abbreviation (e.g., BCS, ENG) |
-| `department_name` | CharField | `max_length=100, blank=False, null=False` | Department offering program |
+| `department_name` | CharField | `max_length=50, blank=False, null=False` | Department offering program (5-50 chars) |
 | `has_streams` | BooleanField | `default=False` | Whether program has stream subdivisions |
 
 ### Meta Options
@@ -112,7 +112,7 @@ def validate_program_code_format(value):
 **CHECK Constraints:**
 - `program_code` matches regex `^[A-Z]{3}$`
 - `program_name` length >= 5
-- `department_name` length >= 3
+- `department_name` length >= 5 and <= 50
 
 **UNIQUE Constraints:**
 - `program_code` (enforced by field)
@@ -215,9 +215,9 @@ Represents individual courses offered in programs (e.g., Data Structures, Databa
 |------------|------------------|------------|-------------|
 | `course_id` | AutoField | `primary_key=True` | Auto-incrementing primary key |
 | `course_name` | CharField | `max_length=200, blank=False, null=False` | Full name of course |
-| `course_code` | CharField | `max_length=10, unique=True, blank=False, null=False` | Short code (e.g., CS201, ENG301) |
+| `course_code` | CharField | `max_length=6, unique=True, blank=False, null=False` | 6-character alphanumeric code (e.g., BCS012, BEG230, DIT410) |
 | `program` | ForeignKey | `to=Program, on_delete=CASCADE, related_name='courses'` | Program offering this course |
-| `department_name` | CharField | `max_length=100, blank=False, null=False` | Department teaching course |
+| `department_name` | CharField | `max_length=50, blank=False, null=False` | Department teaching course (5-50 chars) |
 | `lecturer` | ForeignKey | `to='user_management.LecturerProfile', on_delete=SET_NULL, null=True, blank=True, related_name='courses'` | Assigned lecturer (NULLABLE) |
 
 ### Meta Options
@@ -285,16 +285,16 @@ Represents individual courses offered in programs (e.g., Data Structures, Databa
 ```python
 def validate_course_code_format(value):
     import re
-    pattern = r'^[A-Z]{2,4}[0-9]{3}$'
+    pattern = r'^[A-Z0-9]{6}$'
     if not re.match(pattern, value):
-        raise ValidationError('Course code must be 2-4 uppercase letters followed by 3 digits')
+        raise ValidationError('Course code must be exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410)')
 ```
 - Add to `course_code` field validators parameter
 
 ### Database Constraints
 
 **CHECK Constraints:**
-- `course_code` matches regex `^[A-Z]{2,4}[0-9]{3}$`
+- `course_code` matches regex `^[A-Z0-9]{6}$`
 
 **UNIQUE Constraints:**
 - `course_code` (enforced by field)

@@ -130,7 +130,7 @@ This document provides a comprehensive overview of all Django models across the 
 **Key Fields**:
 - `lecturer_id`: AutoField (PK)
 - `user`: OneToOneField(User, CASCADE)
-- `department_name`: CharField(100)
+- `department_name`: CharField(50, min=5, max=50)
 
 **Key Constraints**:
 - User must have role='Lecturer'
@@ -165,7 +165,7 @@ This document provides a comprehensive overview of all Django models across the 
 - `program_id`: AutoField (PK)
 - `program_name`: CharField(200, unique=True)
 - `program_code`: CharField(3, unique=True, format: `ABC`)
-- `department_name`: CharField(100)
+- `department_name`: CharField(50, min=5, max=50)
 - `has_streams`: BooleanField(default=False)
 
 **Key Constraints**:
@@ -234,13 +234,13 @@ This document provides a comprehensive overview of all Django models across the 
 **Key Fields**:
 - `course_id`: AutoField (PK)
 - `course_name`: CharField(200)
-- `course_code`: CharField(10, unique=True, format: `ABC123`)
+- `course_code`: CharField(6, unique=True, format: `BCS012`)
 - `program`: ForeignKey(Program, CASCADE)
-- `department_name`: CharField(100)
+- `department_name`: CharField(50, min=5, max=50)
 - `lecturer`: ForeignKey(LecturerProfile, SET_NULL, nullable)
 
 **Key Constraints**:
-- course_code format: `^[A-Z]{2,4}[0-9]{3}$`
+- course_code format: `^[A-Z0-9]{6}$` (exactly 6 uppercase alphanumeric characters)
 - course_code unique
 - Lecturer must be active if assigned
 
@@ -716,9 +716,9 @@ Report (reports)
 - `StudentProfile.student_id`: Format `^[A-Z]{3}/[0-9]{6}$`
 - `StudentProfile.qr_code_data = student_id`
 - `StudentProfile.year_of_study`: BETWEEN 1 AND 4
-- `Program.program_code`: Format `^[A-Z]{3}$`
+- `Program.program_code`: Format `^[A-Z]{3}$` (exactly 3 uppercase letters)
 - `Stream.year_of_study`: BETWEEN 1 AND 4
-- `Course.course_code`: Format `^[A-Z]{2,4}[0-9]{3}$`
+- `Course.course_code`: Format `^[A-Z0-9]{6}$` (exactly 6 uppercase alphanumeric characters)
 - `Session.time_ended > time_created`
 - `Session.latitude`: BETWEEN -90 AND 90
 - `Session.longitude`: BETWEEN -180 AND 180

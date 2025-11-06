@@ -56,9 +56,9 @@ Conventions:
 - Purpose: Add a new program.
 - Input: data = { program_name, program_code, department_name, has_streams }
 - Validations:
-  - program_code: uppercase, length 2-6, letters/digits allowed; unique.
-  - program_name: 3-150 chars.
-  - department_name: 3-150 chars.
+  - program_code: exactly 3 uppercase letters (e.g., BCS, BEG, DIT); unique.
+  - program_name: 5-200 chars.
+  - department_name: 5-50 chars.
 - Flow:
   - Check code uniqueness → normalize code to uppercase → create via repository.
 - Returns: ProgramDTO
@@ -206,9 +206,10 @@ Conventions:
 1) create_course(data)
 - Purpose: Add new course; lecturer assignment optional at creation.
 - Input:
-  - course_name (3-150), course_code (pattern), program_id, department_name, lecturer_id? (optional)
+  - course_name (3-200), course_code (pattern), program_id, department_name (5-50), lecturer_id? (optional)
 - Validations:
-  - course_code: uppercase, unique, recommended pattern: ^[A-Z]{2,6}[0-9]{2,4}$ (adapt to your standard).
+  - course_code: exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410); unique.
+  - department_name: 5-50 chars.
   - program exists.
   - If lecturer_id provided: lecturer exists and user.is_active=True (User Management).
   - Optional business rule: department_name should match lecturer.department_name (warn or enforce).

@@ -228,8 +228,8 @@ POST /api/academic-structure/v1/courses/301/assign-lecturer
 
 ## 5) Validation Rules (API layer hints)
 
-- program_code: uppercase, 2–6 chars, alnum; immutable after create.
-- course_code: uppercase pattern ^[A-Z]{2,6}[0-9]{2,4}$; immutable after create.
+- program_code: exactly 3 uppercase letters (e.g., BCS, BEG, DIT); immutable after create.
+- course_code: exactly 6 uppercase alphanumeric characters, no symbols (e.g., BCS012, BEG230, DIT410); immutable after create.
 - stream_name: 1–50 chars; unique per (program, year, name).
 - year_of_study: integer 1..4.
 - program.has_streams=false → block stream creation.
