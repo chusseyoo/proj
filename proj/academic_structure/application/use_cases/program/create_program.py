@@ -60,9 +60,9 @@ class CreateProgramUseCase:
             )
         
         # Validate department_name length
-        if len(department_name) < 3 or len(department_name) > 150:
+        if len(department_name) < 5 or len(department_name) > 50:
             raise ValidationError(
-                f"department_name must be between 3 and 150 characters, got: {len(department_name)}"
+                f"department_name must be between 5 and 50 characters, got: {len(department_name)}"
             )
         
         # Check uniqueness

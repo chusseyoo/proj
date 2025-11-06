@@ -18,7 +18,7 @@ class Program(models.Model):
         unique=True,
         validators=[RegexValidator(regex=r"^[A-Z]{3}$", message="Program code must be 3 uppercase letters")],
     )
-    department_name = models.CharField(max_length=100, validators=[MinLengthValidator(3)])
+    department_name = models.CharField(max_length=50, validators=[MinLengthValidator(5), MaxLengthValidator(50)])
     has_streams = models.BooleanField(default=False)
 
     class Meta:
@@ -84,12 +84,12 @@ class Course(models.Model):
     course_id = models.AutoField(primary_key=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name="courses")
     course_code = models.CharField(
-        max_length=10,
+        max_length=6,
         unique=True,
-        validators=[RegexValidator(regex=r"^[A-Z]{2,4}[0-9]{3}$", message="Course code must match pattern e.g. CS201")],
+        validators=[RegexValidator(regex=r"^[A-Z0-9]{6}$", message="Course code must be exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410)")],
     )
     course_name = models.CharField(max_length=200, validators=[MinLengthValidator(3)])
-    department_name = models.CharField(max_length=100, validators=[MinLengthValidator(3)])
+    department_name = models.CharField(max_length=50, validators=[MinLengthValidator(5), MaxLengthValidator(50)])
     lecturer = models.ForeignKey(
         "user_management.LecturerProfile",
         on_delete=models.SET_NULL,
