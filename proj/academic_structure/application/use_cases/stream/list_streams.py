@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 
+from ....domain.exceptions import ProgramNotFoundError
 from ....infrastructure.repositories import StreamRepository, ProgramRepository
 from ...dto import StreamDTO, to_stream_dto
 
@@ -38,7 +39,15 @@ class ListStreamsByProgramUseCase:
             
         Returns:
             List of StreamDTOs
+            
+        Raises:
+            ProgramNotFoundError: If program with given ID does not exist
         """
+        # Validate that the program exists
+        program = self.program_repository.find_by_id(program_id)
+        if program is None:
+            raise ProgramNotFoundError(f"Program with ID {program_id} not found")
+        
         if year_of_study is not None:
             streams = self.stream_repository.list_by_program_and_year(
                 program_id, year_of_study
@@ -48,9 +57,7 @@ class ListStreamsByProgramUseCase:
         
         # Optional enrichment with program_code
         program_code = None
-        if include_program_code:
-            program = self.program_repository.get_by_id(program_id)
-            if program:
-                program_code = program.program_code
+        if include_program_code and program:
+            program_code = program.program_code
         
         return [to_stream_dto(stream, program_code=program_code) for stream in streams]
