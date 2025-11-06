@@ -64,10 +64,10 @@ class CreateCourseUseCase:
         department_name = data['department_name'].strip()
         lecturer_id = data.get('lecturer_id')  # Optional
         
-        # Validate course_code format (e.g., CS201, ENG301)
+        # Validate course_code format (e.g., BCS012, BEG230, DIT410)
         if not self._is_valid_course_code(course_code):
             raise ValidationError(
-                f"course_code must match pattern (2-4 uppercase letters + 3 digits), got: '{course_code}'"
+                f"course_code must be exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410), got: '{course_code}'"
             )
         
         # Validate course_name length
@@ -77,9 +77,9 @@ class CreateCourseUseCase:
             )
         
         # Validate department_name length
-        if len(department_name) < 3 or len(department_name) > 150:
+        if len(department_name) < 5 or len(department_name) > 50:
             raise ValidationError(
-                f"department_name must be between 3 and 150 characters, got: {len(department_name)}"
+                f"department_name must be between 5 and 50 characters, got: {len(department_name)}"
             )
         
         # Check uniqueness
@@ -89,7 +89,7 @@ class CreateCourseUseCase:
             )
         
         # Validate program exists
-        program = self.program_repository.get_by_id(program_id)
+        program = self.program_repository.find_by_id(program_id)
         if program is None:
             raise ProgramNotFoundError(f"Program with ID {program_id} not found")
         
@@ -120,12 +120,12 @@ class CreateCourseUseCase:
         )
 
     def _is_valid_course_code(self, code: str) -> bool:
-        """Validate course code format: 2-4 uppercase letters + 3 digits.
+        """Validate course code format: exactly 6 uppercase alphanumeric characters.
         
-        Examples: CS201, ENG301, MATH101
+        Examples: BCS012, BEG230, DIT410, MIT101
         """
         import re
-        pattern = r'^[A-Z]{2,4}[0-9]{3}$'
+        pattern = r'^[A-Z0-9]{6}$'
         return bool(re.match(pattern, code))
 
     def _validate_lecturer(self, lecturer_id: int) -> None:

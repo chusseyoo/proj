@@ -45,31 +45,22 @@ class AssignLecturerUseCase:
             LecturerInactiveError: If lecturer account is not active
         """
         # Retrieve course
-        course = self.course_repository.get_by_id(course_id)
+        course = self.course_repository.find_by_id(course_id)
         if course is None:
             raise CourseNotFoundError(f"Course with ID {course_id} not found")
         
         # Validate lecturer exists and is active (cross-context)
         self._validate_lecturer(lecturer_id)
         
-        # Assign lecturer (create new instance - Course is frozen)
-        from ....domain.entities.course import Course
-        assigned_course = Course(
-            course_id=course.course_id,
-            course_name=course.course_name,
-            course_code=course.course_code,
-            program_id=course.program_id,
-            department_name=course.department_name,
-            lecturer_id=lecturer_id
-        )
-        updated_course = self.course_repository.update(assigned_course)
+        # Assign lecturer by updating only the lecturer_id field
+        updated_course = self.course_repository.update(course_id, {'lecturer_id': lecturer_id})
         
         # Enrichment
         program_code = None
         if include_program_code:
             from ....infrastructure.repositories import ProgramRepository
             program_repository = ProgramRepository()
-            program = program_repository.get_by_id(updated_course.program_id)
+            program = program_repository.find_by_id(updated_course.program_id)
             if program:
                 program_code = program.program_code
         

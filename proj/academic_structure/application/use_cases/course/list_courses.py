@@ -51,8 +51,8 @@ class ListCoursesUseCase:
         elif lecturer_id:
             courses = self.course_repository.list_by_lecturer(lecturer_id)
         else:
-            # No filters - get all (might want to implement list_all in repository)
-            courses = self.course_repository.list_by_program(program_id=None)
+            # No filters - get all
+            courses = self.course_repository.list_all()
         
         # Build enrichment maps if needed
         program_codes = {}
@@ -61,7 +61,7 @@ class ListCoursesUseCase:
         if include_program_code:
             unique_program_ids = set(c.program_id for c in courses)
             for pid in unique_program_ids:
-                program = self.program_repository.get_by_id(pid)
+                program = self.program_repository.find_by_id(pid)
                 if program:
                     program_codes[pid] = program.program_code
         
@@ -123,7 +123,7 @@ class ListUnassignedCoursesUseCase:
         if include_program_code:
             unique_program_ids = set(c.program_id for c in courses)
             for pid in unique_program_ids:
-                program = self.program_repository.get_by_id(pid)
+                program = self.program_repository.find_by_id(pid)
                 if program:
                     program_codes[pid] = program.program_code
         

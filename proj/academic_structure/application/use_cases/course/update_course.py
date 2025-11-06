@@ -68,10 +68,8 @@ class UpdateCourseUseCase:
                 "program_id cannot be changed after creation (use delete and recreate)"
             )
         
-        # Prepare updated fields (Course is frozen - must create new instance)
-        updated_course_name = course.course_name
-        updated_department_name = course.department_name
-        updated_lecturer_id = course.lecturer_id
+        # Build validated updates dict
+        validated_updates = {}
         
         # Validate and apply course_name update
         if 'course_name' in updates:
@@ -80,7 +78,7 @@ class UpdateCourseUseCase:
                 raise ValidationError(
                     f"course_name must be between 3 and 200 characters, got: {len(course_name)}"
                 )
-            updated_course_name = course_name
+            validated_updates['course_name'] = course_name
         
         # Validate and apply department_name update
         if 'department_name' in updates:
@@ -89,7 +87,7 @@ class UpdateCourseUseCase:
                 raise ValidationError(
                     f"department_name must be between 3 and 150 characters, got: {len(department_name)}"
                 )
-            updated_department_name = department_name
+            validated_updates['department_name'] = department_name
         
         # Validate and apply lecturer_id update (cross-context)
         if 'lecturer_id' in updates:
@@ -99,21 +97,10 @@ class UpdateCourseUseCase:
             if lecturer_id is not None:
                 self._validate_lecturer(lecturer_id)
             
-            updated_lecturer_id = lecturer_id
+            validated_updates['lecturer_id'] = lecturer_id
         
-        # Create new immutable course instance with updates
-        from ....domain.entities.course import Course
-        modified_course = Course(
-            course_id=course.course_id,
-            course_name=updated_course_name,
-            course_code=course.course_code,
-            program_id=course.program_id,
-            department_name=updated_department_name,
-            lecturer_id=updated_lecturer_id
-        )
-        
-        # Save updated course
-        updated_course = self.course_repository.update(modified_course)
+        # Update course via repository (only changed fields)
+        updated_course = self.course_repository.update(course_id, validated_updates)
         
         # Optional enrichment
         program_code = None
@@ -123,7 +110,7 @@ class UpdateCourseUseCase:
             # Import here to avoid circular dependency
             from ....infrastructure.repositories import ProgramRepository
             program_repository = ProgramRepository()
-            program = program_repository.get_by_id(updated_course.program_id)
+            program = program_repository.find_by_id(updated_course.program_id)
             if program:
                 program_code = program.program_code
         

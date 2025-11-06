@@ -29,7 +29,7 @@ class DeleteCourseUseCase:
             CourseCannotBeDeletedError: If course has scheduled sessions
         """
         # Retrieve course
-        course = self.course_repository.get_by_id(course_id)
+        course = self.course_repository.find_by_id(course_id)
         if course is None:
             raise CourseNotFoundError(f"Course with ID {course_id} not found")
         
