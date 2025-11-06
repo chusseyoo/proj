@@ -37,7 +37,7 @@ class GetStreamUseCase:
         Raises:
             StreamNotFoundError: If stream with given ID does not exist
         """
-        stream = self.stream_repository.get_by_id(stream_id)
+        stream = self.stream_repository.find_by_id(stream_id)
         
         if stream is None:
             raise StreamNotFoundError(f"Stream with ID {stream_id} not found")
@@ -45,7 +45,7 @@ class GetStreamUseCase:
         # Optional enrichment with program_code
         program_code = None
         if include_program_code:
-            program = self.program_repository.get_by_id(stream.program_id)
+            program = self.program_repository.find_by_id(stream.program_id)
             if program:
                 program_code = program.program_code
         

@@ -30,7 +30,7 @@ class GetProgramUseCase:
         Raises:
             ProgramNotFoundError: If program with given ID does not exist
         """
-        program = self.program_repository.get_by_id(program_id)
+        program = self.program_repository.find_by_id(program_id)
         
         if program is None:
             raise ProgramNotFoundError(f"Program with ID {program_id} not found")

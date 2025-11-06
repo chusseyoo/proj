@@ -40,7 +40,7 @@ class UpdateStreamUseCase:
             StreamAlreadyExistsError: If new name conflicts with existing stream
         """
         # Check if stream exists
-        stream = self.stream_repository.get_by_id(stream_id)
+        stream = self.stream_repository.find_by_id(stream_id)
         if stream is None:
             raise StreamNotFoundError(f"Stream with ID {stream_id} not found")
         
@@ -68,11 +68,13 @@ class UpdateStreamUseCase:
             
             # Check for conflicts
             if stream_name != stream.stream_name:
+                # Use the current or updated year_of_study for the check
+                year_to_check = updates.get('year_of_study', stream.year_of_study)
                 if self.stream_repository.exists_by_program_and_name(
-                    stream.program_id, stream_name
+                    stream.program_id, stream_name, year_to_check
                 ):
                     raise StreamAlreadyExistsError(
-                        f"Stream '{stream_name}' already exists for this program"
+                        f"Stream '{stream_name}' already exists for this program in year {year_to_check}"
                     )
             
             updates['stream_name'] = stream_name
@@ -84,6 +86,17 @@ class UpdateStreamUseCase:
                 raise ValidationError(
                     f"year_of_study must be an integer between 1 and 4, got: {year_of_study}"
                 )
+            
+            # Check for conflicts if year is changing
+            if year_of_study != stream.year_of_study:
+                # Use the current or updated stream_name for the check
+                name_to_check = updates.get('stream_name', stream.stream_name)
+                if self.stream_repository.exists_by_program_and_name(
+                    stream.program_id, name_to_check, year_of_study
+                ):
+                    raise StreamAlreadyExistsError(
+                        f"Stream '{name_to_check}' already exists for this program in year {year_of_study}"
+                    )
         
         # Update via repository
         updated_stream = self.stream_repository.update(stream_id, updates)

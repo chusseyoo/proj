@@ -28,7 +28,7 @@ class DeleteStreamUseCase:
             StreamCannotBeDeletedError: If stream has assigned students
         """
         # Check if stream exists
-        stream = self.stream_repository.get_by_id(stream_id)
+        stream = self.stream_repository.find_by_id(stream_id)
         if stream is None:
             raise StreamNotFoundError(f"Stream with ID {stream_id} not found")
         

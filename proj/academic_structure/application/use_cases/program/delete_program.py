@@ -31,7 +31,7 @@ class DeleteProgramUseCase:
             ProgramCannotBeDeletedError: If program has students or courses
         """
         # Check if program exists
-        program = self.program_repository.get_by_id(program_id)
+        program = self.program_repository.find_by_id(program_id)
         if program is None:
             raise ProgramNotFoundError(f"Program with ID {program_id} not found")
         

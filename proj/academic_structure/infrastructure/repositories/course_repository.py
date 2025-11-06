@@ -57,6 +57,11 @@ class CourseRepository:
         """Check if course code already exists."""
         return ORMCourse.objects.filter(course_code__iexact=course_code).exists()
 
+    def list_all(self) -> Iterable[DomainCourse]:
+        """Get all courses."""
+        orm_courses = ORMCourse.objects.all().order_by("course_code")
+        return [self._to_domain(c) for c in orm_courses]
+
     def list_by_program(self, program_id: int) -> Iterable[DomainCourse]:
         """Get all courses for a program."""
         orm_courses = ORMCourse.objects.filter(program_id=program_id).order_by("course_code")

@@ -71,7 +71,7 @@ class CreateStreamUseCase:
             )
         
         # Check if program exists
-        program = self.program_repository.get_by_id(program_id)
+        program = self.program_repository.find_by_id(program_id)
         if program is None:
             raise ProgramNotFoundError(f"Program with ID {program_id} not found")
         
@@ -82,9 +82,9 @@ class CreateStreamUseCase:
             )
         
         # Check if stream already exists for this program/year/name
-        if self.stream_repository.exists_by_program_and_name(program_id, stream_name):
+        if self.stream_repository.exists_by_program_and_name(program_id, stream_name, year_of_study):
             raise StreamAlreadyExistsError(
-                f"Stream '{stream_name}' already exists for program '{program.program_code}'"
+                f"Stream '{stream_name}' already exists for program '{program.program_code}' in year {year_of_study}"
             )
         
         # Create stream via repository
