@@ -39,7 +39,9 @@ class LecturerProfile:
         self.department_name = new_department.strip()
     
     def __str__(self) -> str:
-        return f"Lecturer - {self.department_name}"
+        # Consistent natural language pattern: "DepartmentName Lecturer"
+        # Matches test expectations and aligns with other entity __str__ formats.
+        return f"{self.department_name} Lecturer"
     
     def __eq__(self, other) -> bool:
         if not isinstance(other, LecturerProfile):

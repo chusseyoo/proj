@@ -19,6 +19,7 @@ from ...domain.exceptions import (
     StreamRequiredError,
     StreamNotAllowedError,
     StreamNotInProgramError,
+    ProgramCodeMismatchError,
 )
 from ...domain.services import IdentityService, EnrollmentService
 from ...infrastructure.repositories import (
@@ -95,6 +96,11 @@ class RegistrationService:
 
         # Program/Stream validations
         program = ProgramModel.objects.get(id=student_data['program_id'])
+        
+        # Validate student ID program code matches enrolled program code
+        if student_id.program_code != program.program_code:
+            raise ProgramCodeMismatchError(student_id.program_code, program.program_code)
+        
         program_has_streams = program.has_streams
         stream_id = student_data.get('stream_id')
         EnrollmentService.validate_stream_requirement(program_has_streams, stream_id)

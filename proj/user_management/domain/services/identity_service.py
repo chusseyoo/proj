@@ -39,9 +39,8 @@ class IdentityService:
             ValueError: If non-student lacks password
         """
         if role == UserRole.STUDENT and has_password:
-            raise StudentCannotHavePasswordError(
-                "Students use passwordless authentication"
-            )
+            # Fixed-message domain exception: no arguments expected.
+            raise StudentCannotHavePasswordError()
         
         if role in (UserRole.ADMIN, UserRole.LECTURER) and not has_password:
             raise ValueError(

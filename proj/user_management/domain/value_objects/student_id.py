@@ -25,9 +25,6 @@ class StudentId:
     
     def __post_init__(self):
         """Validate student ID format and normalize to uppercase."""
-        if not self.value:
-            raise ValueError("Student ID cannot be empty")
-        
         # Normalize to uppercase
         normalized = self.value.upper().strip()
         object.__setattr__(self, 'value', normalized)
