@@ -41,23 +41,23 @@ class AuthenticationService:
         email_norm = email.strip().lower()
         user = self.user_repository.find_by_email(email_norm)
         if not user:
-            raise InvalidCredentialsError("Invalid credentials")
+            raise InvalidCredentialsError()
 
         # Fetch hashed password from ORM
         from ...infrastructure.orm.django_models import User as UserModel
         try:
             user_model = UserModel.objects.get(user_id=user.user_id)
         except UserModel.DoesNotExist:
-            raise InvalidCredentialsError("Invalid credentials")
+            raise InvalidCredentialsError()
 
         if user.is_student():
-            raise StudentCannotLoginError("Students cannot log in with password")
+            raise StudentCannotLoginError()
 
         if not self.password_service.verify_password(password, user_model.password):
-            raise InvalidCredentialsError("Invalid credentials")
+            raise InvalidCredentialsError()
 
         if not user.is_active:
-            raise UserInactiveError("Your account has been deactivated. Contact admin.")
+            raise UserInactiveError()
 
         access = self.generate_access_token(user)
         refresh = self.generate_refresh_token(user)
@@ -108,12 +108,16 @@ class AuthenticationService:
         try:
             decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         except jwt.ExpiredSignatureError as e:
-            raise ExpiredTokenError("Token has expired") from e
+            raise ExpiredTokenError() from e
         except jwt.InvalidTokenError as e:
             raise InvalidTokenError("Invalid token") from e
 
+        # Enforce presence of expiration for all first-party tokens
+        if 'exp' not in decoded:
+            raise InvalidTokenError("Missing exp")
+
         if decoded.get('type') != token_type:
-            raise InvalidTokenTypeError(f"Expected {token_type} token")
+            raise InvalidTokenTypeError(token_type, decoded.get('type'))
 
         return decoded
 
@@ -132,15 +136,17 @@ class AuthenticationService:
         # If we have a store, enforce revocation/rotation
         if self.refresh_store and jti:
             try:
-                if self.refresh_store.is_revoked(jti):
-                    raise InvalidTokenError("Refresh token has been revoked")
+                is_revoked = self.refresh_store.is_revoked(jti)
             except Exception:
-                # If store check fails, proceed with caution (stateless fallback)
-                pass
+                # If store check fails, fall back to stateless mode
+                is_revoked = False
+            
+            if is_revoked:
+                raise InvalidTokenError("Refresh token has been revoked")
 
         user = self.user_repository.get_by_id(user_id)
         if not user.is_active:
-            raise UserInactiveError("Your account has been deactivated. Contact admin.")
+            raise UserInactiveError()
 
         access = self.generate_access_token(user)
 

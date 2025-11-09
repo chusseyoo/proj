@@ -129,6 +129,17 @@ class InvalidYearError(UserManagementException):
         self.year = year
 
 
+class ProgramCodeMismatchError(UserManagementException):
+    """Raised when student ID program code doesn't match enrolled program code."""
+    def __init__(self, student_id_code: str, program_code: str):
+        super().__init__(
+            f"Student ID program code '{student_id_code}' does not match "
+            f"enrolled program code '{program_code}'"
+        )
+        self.student_id_code = student_id_code
+        self.program_code = program_code
+
+
 class InvalidDepartmentNameError(UserManagementException):
     """Raised when department name is invalid."""
     def __init__(self, reason: str = "Invalid department name"):

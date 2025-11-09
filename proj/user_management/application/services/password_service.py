@@ -62,7 +62,8 @@ class PasswordService:
     def change_password(self, user_id: int, old_password: str, new_password: str) -> str:
         user = self.user_repository.get_by_id(user_id)
         if user.is_student():
-            raise StudentCannotHavePasswordError("Students don't use passwords")
+            # Domain exception takes no arguments
+            raise StudentCannotHavePasswordError()
 
         # We must fetch hashed password from ORM directly
         from ...infrastructure.orm.django_models import User as UserModel
@@ -72,7 +73,7 @@ class PasswordService:
             raise UserNotFoundError(f"User {user_id} not found")
 
         if not self.verify_password(old_password, user_model.password):
-            raise InvalidPasswordError("Old password is incorrect")
+            raise InvalidPasswordError()
 
         if old_password == new_password:
             raise WeakPasswordError("New password must be different from old password")
@@ -86,7 +87,7 @@ class PasswordService:
         # Ensure user exists and has password
         user = self.user_repository.get_by_id(user_id)
         if not (user.is_admin() or user.is_lecturer()):
-            raise StudentCannotHavePasswordError("Students don't use passwords")
+            raise StudentCannotHavePasswordError()
 
         payload = {
             'user_id': user_id,
@@ -100,12 +101,13 @@ class PasswordService:
         try:
             decoded = jwt.decode(reset_token, settings.SECRET_KEY, algorithms=['HS256'])
         except jwt.ExpiredSignatureError as e:
-            raise ExpiredTokenError("Reset token expired") from e
+            # Domain ExpiredTokenError takes no arguments
+            raise ExpiredTokenError() from e
         except jwt.InvalidTokenError as e:
             raise InvalidTokenError("Invalid reset token") from e
 
         if decoded.get('type') != 'password_reset':
-            raise InvalidTokenTypeError("Expected password_reset token")
+            raise InvalidTokenTypeError('password_reset', decoded.get('type'))
 
         user_id = decoded.get('user_id')
         if not user_id:
