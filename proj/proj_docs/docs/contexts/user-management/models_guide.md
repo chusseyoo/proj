@@ -89,9 +89,13 @@ ROLE_CHOICES = [
 ### Save Override
 
 **In `save()` method:**
-1. Convert email to lowercase: `self.email = self.email.lower()`
+1. (Redundant if upstream passed a normalized Email value object) Ensure lowercase defensively: `self.email = self.email.lower()`
 2. Call `self.full_clean()` to run validation
 3. Call `super().save(*args, **kwargs)`
+
+### Email Normalization Rationale
+
+Email lowercasing is performed centrally by the domain `Email` value object at construction time. The model keeps a defensive lowercase assignment for safety, but service / use case layers should rely on the value object to guarantee normalization and format validation. This avoids duplicated logic and ensures all persisted emails are canonical before reaching the ORM.
 
 ### Database Constraints
 
@@ -171,10 +175,13 @@ Extended profile information for students. One-to-one relationship with User whe
 ### Save Override
 
 **In `save()` method:**
-1. Auto-set `qr_code_data = self.student_id` if not provided
-2. Convert `student_id` to uppercase
+1. Auto-set `qr_code_data = self.student_id` if not provided (never manually supplied)
+2. Convert `student_id` to uppercase for canonical storage
 3. Call `self.full_clean()` to run validation
 4. Call `super().save(*args, **kwargs)`
+
+#### Rationale for Centralized Derivation
+`qr_code_data` is a pure mirror of `student_id`. Deriving it inside the model and domain entity prevents duplication across services, serializers, management commands, and migrations. Only the canonical `student_id` is accepted as input; `qr_code_data` is always computed, ensuring any invariant (or database CHECK constraint) requiring `qr_code_data = student_id` cannot be violated upstream.
 
 ### Custom Validators
 

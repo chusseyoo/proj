@@ -1111,3 +1111,61 @@ When implementing repositories, ensure:
 ---
 
 **Status**: 📋 Complete repository specification ready for implementation
+
+---
+
+## 21. Repository Method Patterns (Consistency Addendum)
+
+This addendum standardizes lookup semantics across all repositories and complements sections 4, 8, 17, and 18.
+
+### Lookup Families
+
+| Pattern | Not Found Behavior | Return Type | Typical Use | Layer Preference |
+|---------|--------------------|-------------|-------------|------------------|
+| `get_by_*` | Raises custom domain "NotFound" exception | Entity | Required lookup (must exist) | Application services / use cases |
+| `find_by_*` | Returns `None` (no exception) | Optional[Entity] | Optional / conditional logic | Domain services / application orchestration |
+| `exists_by_*` | Returns `False` | `bool` | Fast pre-check (uniqueness / existence) | Anywhere performance matters |
+
+### Implementation Pattern (DRY)
+
+```python
+def get_by_id(self, entity_id: int) -> Entity:
+  try:
+    model = Model.objects.get(pk=entity_id)  # or correct PK field
+    return self._to_domain(model)
+  except Model.DoesNotExist:
+    raise EntityNotFoundError(f"Entity {entity_id} not found")
+
+def find_by_id(self, entity_id: int) -> Optional[Entity]:
+  try:
+    return self.get_by_id(entity_id)
+  except EntityNotFoundError:
+    return None
+
+def exists_by_id(self, entity_id: int) -> bool:
+  return Model.objects.filter(pk=entity_id).exists()
+```
+
+### Usage Guidelines
+
+1. Use `get_*` when absence is exceptional and should propagate as 404 at API layer.
+2. Use `find_*` when absence is an acceptable branch (e.g., "create if missing").
+3. Use `exists_*` to avoid hydrating an entity when only a boolean is required (performance + intent clarity).
+
+### Service vs Domain
+
+- Application services typically invoke `get_*` to enforce invariants early and rely on central exception mapping.
+- Domain services or pure orchestration (use cases) can prefer `find_*` for conditional flows without try/except noise.
+- Validation / uniqueness checks should prefer `exists_*` over `find_*` to avoid unnecessary conversion work.
+
+### Documentation Cross-References
+
+- See Section 8 (Error Handling) for exception taxonomy.
+- See Section 17 (Return Type Specifications) for formal signature expectations.
+- See Section 18 (Naming Conventions) for verb semantics.
+
+### Migration / Refactor Note
+
+Where a repository currently lacks `find_by_*`, introduce it using the wrapper pattern above (no duplicated query logic). This keeps behavior uniform and lowers cognitive load for new contributors.
+
+**Status**: ✅ Pattern standardized and documented

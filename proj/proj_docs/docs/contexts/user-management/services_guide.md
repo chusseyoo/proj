@@ -1,23 +1,26 @@
 # services_guide.md
 
-Brief: Comprehensive guide for implementing the service layer in User Management. Each service is grouped with its methods, validations, business logic, and error handling. Services should be implemented in separate files within a `services/` folder.
+Brief: Comprehensive guide for implementing the service layer in User Management. Each service is grouped with its methods, validations, business logic, and error handling. Services should be implemented in separate files within an `application/services/` folder following Domain-Driven Design (DDD) architecture.
 
 ---
 
 ## File Organization
 
-**Service Layer Structure:**
+**Service Layer Structure (DDD Architecture):**
 ```
 user_management/
-├── services/
-│   ├── __init__.py
-│   ├── user_service.py           # UserService
-│   ├── authentication_service.py  # AuthenticationService
-│   ├── password_service.py        # PasswordService
-│   ├── registration_service.py    # RegistrationService
-│   └── profile_service.py         # ProfileService
-├── repositories.py
-├── models.py
+├── application/
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── user_service.py           # UserService
+│   │   ├── authentication_service.py  # AuthenticationService
+│   │   ├── password_service.py        # PasswordService
+│   │   ├── registration_service.py    # RegistrationService
+│   │   └── profile_service.py         # ProfileService
+│   └── use_cases/                      # Application orchestration layer
+├── domain/                             # Domain entities, value objects, services
+├── infrastructure/                      # Repositories, ORM models
+├── interfaces/                         # API views, serializers
 └── ...
 ```
 
@@ -26,6 +29,13 @@ user_management/
 - Easier to test in isolation
 - Clearer dependencies between services
 - Simpler code navigation
+- Follows DDD layered architecture
+
+**Layer Responsibilities:**
+- **Application Layer** (`application/services/`): Business logic and service orchestration
+- **Domain Layer** (`domain/`): Core business entities, value objects, and domain services
+- **Infrastructure Layer** (`infrastructure/`): Data access (repositories) and external integrations
+- **Interface Layer** (`interfaces/`): API endpoints, serializers, and presentation logic
 
 ---
 
@@ -35,7 +45,7 @@ user_management/
 
 **Purpose:** Handles core user operations (retrieve, update, activate, deactivate).
 
-**File:** `services/user_service.py`
+**File:** `application/services/user_service.py`
 
 **Dependencies:**
 - UserRepository (data access)
@@ -252,7 +262,7 @@ Return: User object with profile
 
 **Purpose:** Handles user authentication, JWT token generation, and token validation.
 
-**File:** `services/authentication_service.py`
+**File:** `application/services/authentication_service.py`
 
 **Dependencies:**
 - UserRepository (fetch user by email)
@@ -545,7 +555,7 @@ Return: User object with profile
 
 **Purpose:** Handles all password-related operations (hashing, verification, validation, reset).
 
-**File:** `services/password_service.py`
+**File:** `application/services/password_service.py`
 
 **Dependencies:**
 - bcrypt or Argon2 library
@@ -826,7 +836,7 @@ Output: "$2b$12$KIXnKq3Y5Z..."
 
 **Purpose:** Handles user registration for all roles (Admin, Lecturer, Student) with role-specific logic.
 
-**File:** `services/registration_service.py`
+**File:** `application/services/registration_service.py`
 
 **Dependencies:**
 - UserRepository
@@ -837,7 +847,7 @@ Output: "$2b$12$KIXnKq3Y5Z..."
 
 **Responsibilities:**
 - Register lecturers (self-registration, auto-activate)
-- Register students (admin only, no password, set qr_code_data)
+- Register students (admin only, no password, qr_code_data derived automatically)
 - Register admins (by existing admin)
 - Validate registration data
 - Create user + profile atomically
@@ -927,7 +937,7 @@ Output: "$2b$12$KIXnKq3Y5Z..."
 
 ### Method: register_student(student_data, admin_user_id)
 
-**Purpose:** Register student (admin only, no password, auto-set qr_code_data).
+**Purpose:** Register student (admin only, no password; qr_code_data derived automatically in domain/model layer).
 
 **Parameters:**
 - `student_data` (dict, required):
@@ -987,7 +997,7 @@ Output: "$2b$12$KIXnKq3Y5Z..."
        'program_id': student_data['program_id'],
        'stream_id': student_data.get('stream_id'),  # Can be None
        'year_of_study': student_data['year_of_study'],
-       'qr_code_data': student_data['student_id'].upper()  # Auto-set
+       # qr_code_data omitted – derived automatically
    }
    student_profile = student_repository.create(profile_data)
    ```
@@ -1016,7 +1026,7 @@ Output: "$2b$12$KIXnKq3Y5Z..."
 
 **Important Notes:**
 - Student has **NO password** (password = NULL)
-- `qr_code_data` is **auto-set to match student_id**
+- `qr_code_data` is **derived automatically from student_id** (do not supply in service)
 - `stream_id` can be NULL if program has no streams
 - Only Admin can register students
 
@@ -1123,6 +1133,38 @@ Output: "$2b$12$KIXnKq3Y5Z..."
 - Get `program.has_streams` to determine stream requirement
 - Validate `stream_id` exists and belongs to program
 
+**⚠️ CRITICAL: Cross-Context Model Primary Keys**
+
+When referencing models from other contexts (like Academic Structure), always use the correct primary key field name. External models may not use Django's default `id` field.
+
+**Common Mistake:**
+```python
+# ❌ WRONG - Assumes default 'id' field
+program = ProgramModel.objects.get(id=program_id)  # FieldError!
+stream = StreamModel.objects.get(id=stream_id)      # FieldError!
+```
+
+**Correct Approach:**
+```python
+# ✅ CORRECT - Use actual primary key field names
+program = ProgramModel.objects.get(program_id=program_id)  # ✓
+stream = StreamModel.objects.get(stream_id=stream_id)      # ✓
+```
+
+**How to Verify Primary Key Field:**
+1. Check the model definition in the external context
+2. Look for `primary_key=True` in field definition
+3. Use Django shell: `ProgramModel._meta.pk.name`
+4. Check the context's models_guide.md documentation
+
+**Academic Structure Primary Keys:**
+- `Program` model uses: `program_id` (not `id`)
+- `Stream` model uses: `stream_id` (not `id`)
+- `Course` model uses: `course_id` (not `id`)
+
+**Best Practice:**
+Always explicitly check model definitions before writing cross-context queries to avoid `FieldError: Cannot resolve keyword 'id'` exceptions.
+
 **Email Notification Context:**
 - Send welcome email after successful registration
 - Email should be sent **after transaction commits**
@@ -1150,7 +1192,7 @@ email_service.send_email(email_data)  # Async
 **When to Use Transactions:**
 - ✅ Lecturer registration (User + LecturerProfile)
 - ✅ Student registration (User + StudentProfile)
-- ❌ Admin registration (only User, no profile)
+- ✅ Admin registration (User only) — kept for consistency, safety, and future-proofing
 
 **Transaction Pattern:**
 ```python
@@ -1179,6 +1221,24 @@ email_service.send_welcome_email(user.email)
 - Retry email separately if it fails
 - Don't hold database locks while sending email
 
+### Why a Transaction for Admin Registration?
+
+Although admin creation is a single-table write today, we still wrap it in `@transaction.atomic` for:
+
+1. Consistency across all registration flows
+2. Future-proofing (easy to add audit logs/outbox without changing contract)
+3. Explicit intent that this is a persistence boundary
+4. Negligible overhead for single INSERT
+5. Safety net against partial changes if more steps are added later
+
+```python
+@transaction.atomic
+def register_admin(admin_data):
+    user = user_repository.create({...})
+    # future: outbox event, audit log, etc.
+    return user
+```
+
 ---
 
 ## 4.6 RegistrationService Error Handling
@@ -1204,6 +1264,43 @@ email_service.send_welcome_email(user.email)
 - "This program does not have streams"
 - "Stream does not belong to this program"
 - "Only administrators can register students"
+
+**⚠️ IMPORTANT: Exception Import Requirements**
+
+All domain exceptions must be explicitly imported at the top of the service file where they are used. Failing to import exceptions will cause `NameError` at runtime.
+
+**Example of correct imports:**
+```python
+# In registration_service.py
+from ...domain.exceptions import (
+    EmailAlreadyExistsError,
+    WeakPasswordError,
+    UnauthorizedError,
+    StudentIdAlreadyExistsError,
+    InvalidStudentIdFormatError,
+    StreamRequiredError,
+    StreamNotAllowedError,
+    StreamNotInProgramError,
+    ProgramCodeMismatchError,
+    ProgramNotFoundError,  # ← Must be imported to use!
+)
+```
+
+**Common Mistake:**
+```python
+# ❌ WRONG - Exception defined in domain but not imported
+def register_student(student_data, admin_user):
+    try:
+        program = ProgramModel.objects.get(program_id=student_data['program_id'])
+    except ProgramModel.DoesNotExist:
+        raise ProgramNotFoundError(f"Program not found")  # NameError!
+```
+
+**Always verify:**
+1. ✅ Exception is defined in `domain/exceptions/`
+2. ✅ Exception is imported in service file
+3. ✅ Exception is raised correctly
+4. ✅ Exception is handled in API exception handler
 
 ---
 
@@ -1247,7 +1344,7 @@ email_service.send_welcome_email(user.email)
 
 **Purpose:** Handles profile-specific operations (get, update) for StudentProfile and LecturerProfile.
 
-**File:** `services/profile_service.py`
+**File:** `application/services/profile_service.py`
 
 **Dependencies:**
 - StudentProfileRepository
@@ -1490,15 +1587,248 @@ email_service.send_welcome_email(user.email)
 
 ---
 
+---
+
+# PART 6: USE CASES LAYER
+
+## 6.1 Overview
+
+**Purpose:** Application layer orchestration between API views and domain services. Use cases are thin wrappers that compose services and provide clean entry points for business operations.
+
+**File Location:** `application/use_cases/`
+
+**Structure:**
+```
+user_management/
+├── application/
+│   ├── use_cases/
+│   │   ├── __init__.py
+│   │   ├── auth_use_cases.py           # Login, refresh, token generation
+│   │   ├── registration_use_cases.py    # Lecturer, student, admin registration
+│   │   ├── user_use_cases.py           # Get, update, activate/deactivate users
+│   │   └── profile_use_cases.py         # Student/lecturer profile operations
+```
+
+**Responsibilities:**
+- Orchestrate calls to multiple services when needed
+- Provide focused, single-responsibility handlers
+- Accept domain entities or dicts; return domain entities or dicts
+- No business logic (delegate to services/domain)
+- Minimal parameter transformation
+
+---
+
+## 6.2 Use Case Pattern
+
+**Standard Pattern:**
+```python
+from dataclasses import dataclass
+from ..services import SomeService
+
+@dataclass
+class SomeOperationUseCase:
+    service: SomeService  # Inject dependencies
+    
+    def handle(self, input_data) -> output_type:
+        """
+        Execute the use case.
+        
+        Args:
+            input_data: Input parameters
+            
+        Returns:
+            Result (entity, dict, or DTO)
+        """
+        return self.service.some_method(input_data)
+```
+
+**When to Use:**
+- API views should call use cases, not services directly
+- Keeps views thin (validation, auth, serialization only)
+- Makes testing easier (mock use case instead of service stack)
+- Clear separation: views → use cases → services → repositories
+
+---
+
+## 6.3 Authentication Use Cases
+
+**File:** `application/use_cases/auth_use_cases.py`
+
+### LoginUseCase
+```python
+@dataclass
+class LoginUseCase:
+    auth: AuthenticationService
+    
+    def handle(self, email: str, password: str) -> Dict:
+        return self.auth.login(email, password)
+```
+
+### RefreshAccessTokenUseCase
+```python
+@dataclass
+class RefreshAccessTokenUseCase:
+    auth: AuthenticationService
+    
+    def handle(self, refresh_token: str) -> Dict:
+        return self.auth.refresh_access_token(refresh_token)
+```
+
+### GenerateStudentAttendanceTokenUseCase
+```python
+@dataclass
+class GenerateStudentAttendanceTokenUseCase:
+    auth: AuthenticationService
+    
+    def handle(self, student_profile_id: int, session_id: int) -> str:
+        return self.auth.generate_student_attendance_token(
+            student_profile_id, session_id
+        )
+```
+
+---
+
+## 6.4 Registration Use Cases
+
+**File:** `application/use_cases/registration_use_cases.py`
+
+### RegisterLecturerUseCase
+```python
+@dataclass
+class RegisterLecturerUseCase:
+    registration: RegistrationService
+    
+    def handle(self, lecturer_data: Dict) -> Dict:
+        return self.registration.register_lecturer(lecturer_data)
+```
+
+### RegisterStudentUseCase
+```python
+@dataclass
+class RegisterStudentUseCase:
+    registration: RegistrationService
+    
+    def handle(self, student_data: Dict, admin_user: User) -> Dict:
+        return self.registration.register_student(student_data, admin_user)
+```
+
+### RegisterAdminUseCase
+```python
+@dataclass
+class RegisterAdminUseCase:
+    registration: RegistrationService
+    
+    def handle(self, admin_data: Dict, creator_admin: User) -> Dict:
+        return self.registration.register_admin(admin_data, creator_admin)
+```
+
+---
+
+## 6.5 User Management Use Cases
+
+**File:** `application/use_cases/user_use_cases.py`
+
+### GetUserByIdUseCase
+```python
+@dataclass
+class GetUserByIdUseCase:
+    user_service: UserService
+    
+    def handle(self, user_id: int) -> User:
+        return self.user_service.get_user_by_id(user_id)
+```
+
+### UpdateUserUseCase
+```python
+@dataclass
+class UpdateUserUseCase:
+    user_service: UserService
+    
+    def handle(self, user_id: int, update_data: Dict) -> User:
+        return self.user_service.update_user(user_id, update_data)
+```
+
+### DeactivateUserUseCase
+```python
+@dataclass
+class DeactivateUserUseCase:
+    user_service: UserService
+    
+    def handle(self, user_id: int) -> User:
+        return self.user_service.deactivate_user(user_id)
+```
+
+---
+
+## 6.6 Profile Use Cases
+
+**File:** `application/use_cases/profile_use_cases.py`
+
+### GetStudentProfileByUserIdUseCase
+```python
+@dataclass
+class GetStudentProfileByUserIdUseCase:
+    profile_service: ProfileService
+    
+    def handle(self, user_id: int) -> StudentProfile:
+        return self.profile_service.get_student_profile_by_user_id(user_id)
+```
+
+### UpdateStudentProfileUseCase
+```python
+@dataclass
+class UpdateStudentProfileUseCase:
+    profile_service: ProfileService
+    
+    def handle(self, student_profile_id: int, update_data: Dict) -> StudentProfile:
+        return self.profile_service.update_student_profile(
+            student_profile_id, update_data
+        )
+```
+
+---
+
+## 6.7 Use Case Testing
+
+**Testing Pattern:**
+- Mock service dependencies
+- Call use case `handle()` method
+- Verify service method called with correct args
+- Assert return value
+
+**Example Test:**
+```python
+def test_login_use_case_success():
+    # Arrange
+    mock_auth_service = Mock()
+    mock_auth_service.login.return_value = {
+        'access_token': 'abc123',
+        'refresh_token': 'def456'
+    }
+    use_case = LoginUseCase(auth=mock_auth_service)
+    
+    # Act
+    result = use_case.handle('user@example.com', 'password')
+    
+    # Assert
+    mock_auth_service.login.assert_called_once_with(
+        'user@example.com', 'password'
+    )
+    assert result['access_token'] == 'abc123'
+```
+
+---
+
 ## Summary
 
-This guide is now organized into **5 main parts**, each covering a specific service with all related information:
+This guide is now organized into **6 main parts**, each covering a specific layer with all related information:
 
 1. **UserService** - User retrieval, updates, activation/deactivation
 2. **AuthenticationService** - Login, JWT tokens, token validation
 3. **PasswordService** - Hashing, verification, strength validation, reset
 4. **RegistrationService** - Lecturer, student, admin registration with role-specific logic
 5. **ProfileService** - Profile retrieval and updates
+6. **Use Cases Layer** - Application orchestration between views and services
 
 Each service section includes:
 - Overview and file location
@@ -1512,4 +1842,4 @@ Each service section includes:
 
 ---
 
-**Status**: 📋 Complete service specification ready for implementation
+**Status**: 📋 Complete service and use case specification ready for implementation
