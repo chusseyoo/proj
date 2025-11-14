@@ -123,9 +123,10 @@ class RefreshTokenView(APIView):
         return Response(result, status=status.HTTP_200_OK)
     
     def _get_auth_service(self):
+        user_repo = UserRepository()
         return AuthenticationService(
-            user_repository=UserRepository(),
-            password_service=PasswordService(),
+            user_repository=user_repo,
+            password_service=PasswordService(user_repository=user_repo),
             student_repository=StudentProfileRepository(),
             refresh_store=None,
         )
@@ -191,7 +192,7 @@ class RegisterStudentView(APIView):
     No password, qr_code_data auto-set.
     """
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdmin]
     
     def post(self, request):
         serializer = RegisterStudentSerializer(data=request.data)
@@ -242,7 +243,7 @@ class RegisterAdminView(APIView):
     Register admin (Admin only).
     """
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdmin]
     
     def post(self, request):
         serializer = RegisterAdminSerializer(data=request.data)
@@ -297,7 +298,7 @@ class UserDetailView(APIView):
     Get, update, or deactivate user.
     """
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     
     def get(self, request, user_id):
         """Get user by ID."""
@@ -372,7 +373,7 @@ class StudentProfileView(APIView):
     Get or update student profile.
     """
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     
     def get(self, request, user_id):
         """Get student profile by user_id."""
@@ -437,7 +438,7 @@ class LecturerProfileView(APIView):
     Get or update lecturer profile.
     """
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     
     def get(self, request, user_id):
         """Get lecturer profile by user_id."""

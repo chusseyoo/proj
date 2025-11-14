@@ -77,7 +77,7 @@ class ProfileService:
         # Avoid cross-context repo for now; query via ORM
         from academic_structure.infrastructure.orm.django_models import Program as ProgramModel
         try:
-            program = ProgramModel.objects.get(id=program_id)
+            program = ProgramModel.objects.get(program_id=program_id)
         except ProgramModel.DoesNotExist:
             # Treat as no streams if not found; could raise ProgramNotFoundError if desired
             return False

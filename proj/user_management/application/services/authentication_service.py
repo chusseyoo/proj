@@ -77,6 +77,7 @@ class AuthenticationService:
             'user_id': user.user_id,
             'email': str(user.email),
             'role': user.role.value,
+            'jti': uuid4().hex,  # Unique token ID for each access token
             'exp': datetime.now(tz=timezone.utc) + timedelta(minutes=self.access_minutes),
             'iat': datetime.now(tz=timezone.utc),
             'type': 'access',

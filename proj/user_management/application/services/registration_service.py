@@ -20,6 +20,7 @@ from ...domain.exceptions import (
     StreamNotAllowedError,
     StreamNotInProgramError,
     ProgramCodeMismatchError,
+    ProgramNotFoundError,
 )
 from ...domain.services import IdentityService, EnrollmentService
 from ...infrastructure.repositories import (
@@ -95,7 +96,10 @@ class RegistrationService:
             raise StudentIdAlreadyExistsError('Student ID is already registered')
 
         # Program/Stream validations
-        program = ProgramModel.objects.get(id=student_data['program_id'])
+        try:
+            program = ProgramModel.objects.get(program_id=student_data['program_id'])
+        except ProgramModel.DoesNotExist:
+            raise ProgramNotFoundError(f"Program with ID {student_data['program_id']} not found")
         
         # Validate student ID program code matches enrolled program code
         if student_id.program_code != program.program_code:
@@ -106,10 +110,10 @@ class RegistrationService:
         EnrollmentService.validate_stream_requirement(program_has_streams, stream_id)
         if stream_id is not None:
             try:
-                stream = StreamModel.objects.get(id=stream_id)
+                stream = StreamModel.objects.get(stream_id=stream_id)
             except StreamModel.DoesNotExist:
                 raise StreamNotInProgramError('Stream does not belong to program')
-            if stream.program_id != program.id:
+            if stream.program_id != program.program_id:
                 raise StreamNotInProgramError('Stream does not belong to program')
 
         EnrollmentService.validate_year_of_study(student_data['year_of_study'])
@@ -135,10 +139,10 @@ class RegistrationService:
                 student_profile_id=None,
                 student_id=student_id,
                 user_id=user.user_id,
-                program_id=program.id,
+                program_id=program.program_id,
                 stream_id=stream_id,
                 year_of_study=student_data['year_of_study'],
-                qr_code_data=str(student_id),
+                # qr_code_data omitted – derived automatically by domain entity
             )
         )
 

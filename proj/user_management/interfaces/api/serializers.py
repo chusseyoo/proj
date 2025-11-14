@@ -56,9 +56,9 @@ class RegisterLecturerSerializer(serializers.Serializer):
 class RegisterStudentSerializer(serializers.Serializer):
     """Student registration request validation (admin-only)."""
     student_id = serializers.RegexField(
-        regex=r'^[A-Z]{3}/[0-9]{6}$',
+        regex=r'^[A-Z]{3}/[0-9]{6}$',  # Uppercase letters only
         required=True,
-        error_messages={'invalid': 'Student ID must follow format: ABC/123456'}
+        error_messages={'invalid': 'Student ID must follow format: ABC/123456 (uppercase letters only)'}
     )
     first_name = serializers.CharField(required=True, max_length=50, min_length=2)
     last_name = serializers.CharField(required=True, max_length=50, min_length=2)
@@ -66,6 +66,10 @@ class RegisterStudentSerializer(serializers.Serializer):
     program_id = serializers.IntegerField(required=True, min_value=1)
     stream_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     year_of_study = serializers.IntegerField(required=True, min_value=1, max_value=4)
+    
+    def validate_student_id(self, value):
+        """Ensure student_id is uppercase and trimmed."""
+        return value.strip() if value else value
 
 
 class RegisterAdminSerializer(serializers.Serializer):

@@ -26,16 +26,24 @@ class StudentProfile:
     program_id: int
     stream_id: Optional[int]
     year_of_study: int
-    qr_code_data: str
+    # qr_code_data is derived from student_id; optional at construction to avoid duplication
+    qr_code_data: Optional[str] = None
     
     def __post_init__(self):
-        """Validate invariants."""
+        """Validate invariants and derive qr_code_data if not provided.
+
+        This centralizes the qr_code_data derivation to the domain layer so
+        application/services code does not need to duplicate assignment. The
+        invariant (qr_code_data == student_id) is enforced here.
+        """
         # Year must be between 1 and 4
         if not (1 <= self.year_of_study <= 4):
             raise InvalidYearError(self.year_of_study)
-        
-        # QR code data must match student_id
-        if self.qr_code_data != str(self.student_id):
+
+        # Derive qr_code_data if missing
+        if self.qr_code_data is None:
+            self.qr_code_data = str(self.student_id)
+        elif self.qr_code_data != str(self.student_id):
             raise ValueError("QR code data must match student ID")
     
     @property

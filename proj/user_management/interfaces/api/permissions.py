@@ -50,32 +50,26 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     """
     Permission: User can access own data, or Admin can access any data.
     
-    Expects view to have `get_object_user_id()` method or checks request.user.user_id.
+    Checks URL kwargs for user_id and verifies ownership or admin role.
     """
     
     def has_permission(self, request, view):
-        # User must be authenticated
-        return bool(request.user)
-    
-    def has_object_permission(self, request, view, obj):
+        # User must be authenticated and have user_id attribute
+        if not request.user or not hasattr(request.user, 'user_id'):
+            return False
+        
         # Admin can access everything
         if hasattr(request.user, 'is_admin') and request.user.is_admin():
             return True
         
-        # Owner check: compare user_id from URL param or object
-        target_user_id = None
-        
-        # Try to get user_id from URL kwargs (for /api/users/{user_id}/)
-        if 'user_id' in view.kwargs:
-            target_user_id = int(view.kwargs['user_id'])
-        # Or from object if it's a User entity
-        elif hasattr(obj, 'user_id'):
-            target_user_id = obj.user_id
-        
+        # Get target user_id from URL kwargs
+        target_user_id = view.kwargs.get('user_id')
         if target_user_id:
-            return request.user.user_id == target_user_id
+            # User can only access own data
+            return request.user.user_id == int(target_user_id)
         
-        return False
+        # If no user_id in URL, allow (let view handle it)
+        return True
 
 
 class IsAuthenticated(permissions.BasePermission):
