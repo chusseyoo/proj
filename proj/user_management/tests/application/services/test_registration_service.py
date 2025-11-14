@@ -203,6 +203,8 @@ def mock_program():
     """Mock Program model instance."""
     program = Mock()
     program.id = 1
+    # ORM uses `program_id` attribute in the service layer; keep both in sync for tests
+    program.program_id = 1
     program.program_code = 'BCS'
     program.program_name = 'Bachelor of Computer Science'
     program.has_streams = True
@@ -214,6 +216,8 @@ def mock_program_no_streams():
     """Mock Program model instance without streams."""
     program = Mock()
     program.id = 2
+    # Keep program_id aligned with id
+    program.program_id = 2
     program.program_code = 'BIT'
     program.program_name = 'Bachelor of Information Technology'
     program.has_streams = False
@@ -224,7 +228,9 @@ def mock_program_no_streams():
 def mock_stream():
     """Mock Stream model instance."""
     stream = Mock()
+    # Service expects `stream_id` attribute on Stream objects
     stream.id = 10
+    stream.stream_id = 10
     stream.program_id = 1
     stream.stream_name = 'Software Engineering'
     stream.year_of_study = 2
@@ -627,11 +633,15 @@ class TestRegisterStudent:
         """Test that non-existent program raises error."""
         student_repository.exists_by_student_id.return_value = False
         
+        from user_management.domain.exceptions import ProgramNotFoundError
         with patch('user_management.application.services.registration_service.ProgramModel') as MockProgramModel:
+            # Ensure the patched Mock exposes the real DoesNotExist exception class so
+            # the service's `except ProgramModel.DoesNotExist` can correctly catch it.
             from academic_structure.infrastructure.orm.django_models import Program as ProgramModel
+            MockProgramModel.DoesNotExist = ProgramModel.DoesNotExist
             MockProgramModel.objects.get.side_effect = ProgramModel.DoesNotExist
-            
-            with pytest.raises(ProgramModel.DoesNotExist):
+
+            with pytest.raises(ProgramNotFoundError):
                 service.register_student(student_input, admin_user)
     
     @pytest.mark.django_db
