@@ -85,3 +85,7 @@ parts/
 sdist/
 var/
 wheels/
+
+# Ignore any progress.md files used for per-layer notes
+**/progress.md
+progress.md
