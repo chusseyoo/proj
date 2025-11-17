@@ -1,3 +1,18 @@
 {
-    "python-envs.pythonProjects": []
+    "python-envs.pythonProjects": [],
+    "workbench.iconTheme": "vscode-icons",
+    "vsicons.associations.folders": [
+        {
+            "folderNames": [
+                "attendance_recording",
+                "academic_structure",
+                "email_notifications",
+                "reporting",
+                "session_management",
+                "user_management"
+            ],
+            "icon": "folder_type_root_opened",
+            "format": "svg"
+        }
+    ]
 }
