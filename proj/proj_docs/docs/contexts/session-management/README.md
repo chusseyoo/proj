@@ -107,7 +107,7 @@ Students eligible for a session are determined by:
 
 ### Time Window Validation
 - `time_created` < `time_ended`
-- Duration between 10 minutes and 24 hours
+- Duration between 30 minutes and 3 hours
 - Both must be valid timestamps
 
 ### Location Validation
