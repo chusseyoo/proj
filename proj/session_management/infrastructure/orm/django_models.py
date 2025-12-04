@@ -2,6 +2,7 @@
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from .managers import SessionManager
 
 
 class Session(models.Model):
@@ -84,3 +85,6 @@ class Session(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return f"Session {self.session_id} (course={self.course}, lecturer={self.lecturer})"
+
+    # Provide a custom manager with convenience query helpers (active, overlapping)
+    objects = SessionManager()
