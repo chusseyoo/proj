@@ -16,41 +16,47 @@ from user_management.infrastructure.orm.django_models import User, LecturerProfi
 
 @pytest.mark.django_db
 class TestSessionRepository(TestCase):
-    """Tests for SessionRepository."""
+    """Tests for SessionRepository - with proper FK fixtures."""
 
     def setUp(self):
         """Set up test fixtures."""
         self.repo = SessionRepository()
         
-        # Create test program
+        # Create Program
         self.program = Program.objects.create(
-            program_name="Computer Science Program",
+            program_name="Bachelor of Computer Science",
             program_code="BCS",
-            department_name="Computer Science",
+            department_name="Computing",
             has_streams=False,
         )
         
-        # Create test lecturer
-        self.lecturer_user = User.objects.create_user(
-            email="lecturer@test.com",
-            password="testpass123",
-            first_name="John",
-            last_name="Doe",
+        # Create User for Lecturer
+        self.user = User.objects.create_user(
+            email="test.lecturer@example.com",
             role=User.Roles.LECTURER,
-        )
-        self.lecturer_profile = LecturerProfile.objects.create(
-            user=self.lecturer_user,
-            department_name="Computer Science",
+            first_name="Test",
+            last_name="Lecturer",
+            password="testpass123",
         )
         
-        # Create test course
+        # Create LecturerProfile
+        self.lecturer_profile = LecturerProfile.objects.create(
+            user=self.user,
+            department_name="Computing",
+        )
+        
+        # Create Course
         self.course = Course.objects.create(
-            course_code="CS101",
-            course_name="Introduction to Programming",
             program=self.program,
-            department_name="Computer Science",
+            course_code="BCS012",
+            course_name="Data Structures",
+            department_name="Computing",
             lecturer=self.lecturer_profile,
         )
+
+    def tearDown(self):
+        """Clean up."""
+        pass
 
     def test_save_creates_new_session(self):
         """Test creating a new session."""
