@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('user_management.interfaces.api.urls')),
     path('api/academic-structure/v1/', include('academic_structure.interfaces.api.urls')),
+    path('api/session-management/v1/', include('session_management.interfaces.api.urls')),
 ]
 
 if settings.DEBUG:
