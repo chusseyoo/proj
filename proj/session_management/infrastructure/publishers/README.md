@@ -1,20 +1,56 @@
-In-memory publisher
-===================
+Event Publishers
+================
 
-This folder contains a simple, test-friendly publisher implementation:
+This folder contains event publisher implementations for different environments.
 
-- `in_memory_publisher.py`: Implements `EventPublisherPort.publish(event_name, payload)` and records published events to an in-memory `events` list.
+Files
+-----
 
-When to use
------------
-- Unit and integration tests that need to assert the application published events (for example, `session.created`).
-- Local development when you don't want to depend on external message brokers or task queues.
+- `in_memory_publisher.py`: Test-friendly publisher that records events in memory
+- `celery_publisher.py`: Production publisher that enqueues Celery tasks
+- `utils.py`: Helper functions for safe event publishing (transaction.on_commit)
 
-How it works
-------------
-- Create an instance and inject it into application use-cases which accept a `publisher` argument.
-- After executing the use-case, inspect `publisher.events` to see recorded events. Each event entry is a dict with keys `event` and `payload`.
+In-Memory Publisher (Testing)
+------------------------------
 
-Safety
-------
-- The in-memory publisher is intentionally non-blocking and does not send network traffic. Use it only for local/testing scenarios. Replace with a real adapter (Rabbit, Kafka, Celery, etc.) in production.
+Use for unit and integration tests:
+
+```python
+from session_management.infrastructure.publishers.in_memory_publisher import InMemoryPublisher
+
+publisher = InMemoryPublisher()
+# ... execute use-case ...
+assert len(publisher.events) == 1
+assert publisher.events[0]["event"] == "session.created"
+```
+
+Celery Publisher (Production)
+------------------------------
+
+Use in production to enqueue async tasks:
+
+```python
+from session_management.infrastructure.publishers.celery_publisher import CeleryPublisher
+
+publisher = CeleryPublisher()
+# Events are enqueued as Celery tasks for async processing
+```
+
+Publishing After Commit
+------------------------
+
+Always use `publish_after_commit()` to ensure events are only published after successful DB commits:
+
+```python
+from session_management.infrastructure.publishers.utils import publish_after_commit
+
+# In a use-case
+saved = session_repository.save(domain_session)
+publish_after_commit(
+    publisher,
+    "session.created",
+    {"session_id": saved.session_id, "lecturer_id": saved.lecturer_id}
+)
+```
+
+This prevents publishing events for transactions that later rollback.

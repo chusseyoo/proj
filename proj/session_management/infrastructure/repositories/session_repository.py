@@ -3,16 +3,23 @@
 from datetime import datetime
 from typing import List, Optional
 
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 
 from ...domain.entities.session import Session as DomainSession
 from ...domain.value_objects.time_window import TimeWindow
 from ...domain.value_objects.location import Location
+from ...domain.ports.session_repository import SessionRepositoryPort
+from ...domain.exceptions.core import OverlappingSessionError
 from ..orm.django_models import Session as ORMSession
 
 
-class SessionRepository:
-    """ORM-backed implementation of SessionRepositoryPort."""
+class SessionRepository(SessionRepositoryPort):
+    """ORM-backed implementation of SessionRepositoryPort.
+
+    Wraps DB operations in transactions and maps DB integrity errors (such as
+    exclusion constraint violations) into domain `OverlappingSessionError`.
+    """
 
     def _to_domain(self, orm_session: ORMSession) -> DomainSession:
         """Convert ORM Session to domain Session entity."""
@@ -53,17 +60,25 @@ class SessionRepository:
     def save(self, session: DomainSession) -> DomainSession:
         """Save session (create or update)."""
         data = self._to_orm_data(session)
-        
-        if session.session_id is None:
-            # Create new session
-            orm_session = ORMSession.objects.create(**data)
-        else:
-            # Update existing session
-            orm_session = ORMSession.objects.get(session_id=session.session_id)
-            for key, value in data.items():
-                setattr(orm_session, key, value)
-            orm_session.save()
-        
+
+        try:
+            with transaction.atomic():
+                if session.session_id is None:
+                    # Create new session
+                    orm_session = ORMSession.objects.create(**data)
+                else:
+                    # Update existing session
+                    orm_session = ORMSession.objects.get(session_id=session.session_id)
+                    for key, value in data.items():
+                        setattr(orm_session, key, value)
+                    orm_session.save()
+        except IntegrityError as exc:
+            # Map DB-level exclusion/constraint violations to domain errors
+            msg = str(exc).lower()
+            if "exclud" in msg or "overlap" in msg or "time_range" in msg:
+                raise OverlappingSessionError("Lecturer has overlapping session") from exc
+            raise
+
         return self._to_domain(orm_session)
 
     def get(self, session_id: int) -> Optional[DomainSession]:
@@ -170,16 +185,34 @@ class SessionRepository:
         
         return [self._to_domain(orm_session) for orm_session in qs]
 
-    def has_overlapping(self, lecturer_id: int, time_window: TimeWindow) -> bool:
-        """Check if lecturer has any overlapping sessions in the given time window."""
+    def has_overlapping(
+        self, 
+        lecturer_id: int, 
+        time_window: TimeWindow,
+        exclude_session_id: Optional[int] = None
+    ) -> bool:
+        """Check if lecturer has any overlapping sessions in the given time window.
+        
+        Args:
+            lecturer_id: ID of the lecturer to check
+            time_window: Time window to check for overlaps
+            exclude_session_id: Optional session ID to exclude from check (for updates)
+            
+        Returns:
+            True if overlapping session exists, False otherwise
+        """
         # Overlap condition: (existing_start < new_end) AND (new_start < existing_end)
-        overlapping = ORMSession.objects.filter(
+        qs = ORMSession.objects.filter(
             lecturer_id=lecturer_id,
             time_created__lt=time_window.end,
             time_ended__gt=time_window.start,
-        ).exists()
+        )
         
-        return overlapping
+        # Exclude the session being updated
+        if exclude_session_id is not None:
+            qs = qs.exclude(session_id=exclude_session_id)
+        
+        return qs.exists()
 
     def delete(self, session_id: int) -> None:
         """Delete session by ID."""
