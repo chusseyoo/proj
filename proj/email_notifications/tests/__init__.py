@@ -1,0 +1,1 @@
+"""Email notifications tests package."""
