@@ -1,6 +1,2 @@
-from django.test import TestCase
-
-
-class PlaceholderAttendanceRecordingTest(TestCase):
-    def test_placeholder(self):
-        self.assertTrue(True)
+def test_placeholder_passes():
+    assert True
