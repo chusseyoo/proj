@@ -1,3 +1,8 @@
-from django.db import models
+"""Expose models for Django app registry.
 
-# Create your models here.
+Actual ORM implementations live under infrastructure/orm.
+"""
+
+from .infrastructure.orm.django_models import Attendance  # noqa: F401
+
+__all__ = ["Attendance"]
