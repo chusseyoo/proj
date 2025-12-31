@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 
 from reporting.domain.services.attendance_aggregator import AttendanceAggregator
-from reporting.application.dto.report_dto import StudentRowDTO
+from reporting.domain.value_objects.student_attendance_row import StudentAttendanceRow
 
 
 class SimpleSession:
@@ -17,22 +17,27 @@ def test_present_in_window_and_radius():
     end = datetime(2025, 10, 19, 10, 0, 0)
     session = SimpleSession(start, end)
 
-    students = [{"student_id": "s1", "student_name": "Alice"}]
+    students = [{
+        "student_id": "BCS/234344",
+        "student_name": "Alice Johnson",
+        "email": "alice.johnson@student.university.ac.ke",
+        "program": "Computer Science",
+        "stream": "Stream A"
+    }]
     attendance = [
         {
-            "student_id": "s1",
+            "student_id": "BCS/234344",
             "time_recorded": start + timedelta(minutes=5),
             "within_radius": True,
-            "latitude": "1.0",
-            "longitude": "2.0",
-            "status": "present",
+            "latitude": "-1.286389",
+            "longitude": "36.817223",
         }
     ]
 
     rows = agg.classify(session, students, attendance)
     assert len(rows) == 1
     r = rows[0]
-    assert isinstance(r, StudentRowDTO)
+    assert isinstance(r, StudentAttendanceRow)
     assert r.status == "Present"
     assert r.within_radius is True
 
@@ -43,7 +48,13 @@ def test_absent_no_attendance():
     end = datetime(2025, 10, 19, 10, 0, 0)
     session = SimpleSession(start, end)
 
-    students = [{"student_id": "s2", "student_name": "Bob"}]
+    students = [{
+        "student_id": "BCS/234345",
+        "student_name": "Bob Smith",
+        "email": "bob.smith@student.university.ac.ke",
+        "program": "Computer Science",
+        "stream": "Stream A"
+    }]
     attendance = []
 
     rows = agg.classify(session, students, attendance)
@@ -57,15 +68,20 @@ def test_absent_outside_radius():
     end = datetime(2025, 10, 19, 10, 0, 0)
     session = SimpleSession(start, end)
 
-    students = [{"student_id": "s3", "student_name": "Cara"}]
+    students = [{
+        "student_id": "BCS/234346",
+        "student_name": "Cara Williams",
+        "email": "cara.williams@student.university.ac.ke",
+        "program": "Computer Science",
+        "stream": "Stream B"
+    }]
     attendance = [
         {
-            "student_id": "s3",
+            "student_id": "BCS/234346",
             "time_recorded": start + timedelta(minutes=15),
             "within_radius": False,
-            "latitude": "0.0",
-            "longitude": "0.0",
-            "status": "present",
+            "latitude": "-1.350000",
+            "longitude": "36.900000",
         }
     ]
 
@@ -82,16 +98,28 @@ def test_boundary_times_inclusive():
     session = SimpleSession(start, end)
 
     students = [
-        {"student_id": "s4", "student_name": "Dan"},
-        {"student_id": "s5", "student_name": "Eve"},
+        {
+            "student_id": "BIT/123456",
+            "student_name": "Dan Brown",
+            "email": "dan.brown@student.university.ac.ke",
+            "program": "Information Technology",
+            "stream": "Stream A",
+        },
+        {
+            "student_id": "BIT/123457",
+            "student_name": "Eve Davis",
+            "email": "eve.davis@student.university.ac.ke",
+            "program": "Information Technology",
+            "stream": "Stream A",
+        },
     ]
     attendance = [
-        {"student_id": "s4", "time_recorded": start, "within_radius": True, "latitude": "0", "longitude": "0", "status": "present"},
-        {"student_id": "s5", "time_recorded": end, "within_radius": True, "latitude": "0", "longitude": "0", "status": "present"},
+        {"student_id": "BIT/123456", "time_recorded": start, "within_radius": True, "latitude": "-1.286389", "longitude": "36.817223"},
+        {"student_id": "BIT/123457", "time_recorded": end, "within_radius": True, "latitude": "-1.287000", "longitude": "36.818000"},
     ]
 
     rows = agg.classify(session, students, attendance)
-    assert {r.student_id: r.status for r in rows} == {"s4": "Present", "s5": "Present"}
+    assert {r.student_id: r.status for r in rows} == {"BIT/123456": "Present", "BIT/123457": "Present"}
 
 
 def test_multiple_records_preference_for_qualifying():
@@ -100,14 +128,20 @@ def test_multiple_records_preference_for_qualifying():
     end = datetime(2025, 10, 19, 10, 0, 0)
     session = SimpleSession(start, end)
 
-    students = [{"student_id": "s6", "student_name": "Fay"}]
+    students = [{
+        "student_id": "BIS/789012",
+        "student_name": "Fay Martinez",
+        "email": "fay.martinez@student.university.ac.ke",
+        "program": "Information Systems",
+        "stream": "Stream B",
+    }]
     attendance = [
-        {"student_id": "s6", "time_recorded": start + timedelta(minutes=1), "within_radius": False, "latitude": "0", "longitude": "0", "status": "present"},
-        {"student_id": "s6", "time_recorded": start + timedelta(minutes=2), "within_radius": True, "latitude": "9", "longitude": "9", "status": "present"},
+        {"student_id": "BIS/789012", "time_recorded": start + timedelta(minutes=1), "within_radius": False, "latitude": "-1.350000", "longitude": "36.900000"},
+        {"student_id": "BIS/789012", "time_recorded": start + timedelta(minutes=2), "within_radius": True, "latitude": "-1.286389", "longitude": "36.817223"},
     ]
 
     rows = agg.classify(session, students, attendance)
     r = rows[0]
     assert r.status == "Present"
     # diagnostics should prefer the qualifying record (within_radius True)
-    assert r.latitude == "9"
+    assert r.latitude == "-1.286389"

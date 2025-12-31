@@ -9,15 +9,15 @@ def test_report_validate_and_mark_exported():
     r.validate()
 
     assert not r.is_exported()
-    r.mark_exported(file_path="/tmp/report.csv", file_type="csv")
+    r.mark_exported(file_path="/media/reports/2025/10/session_10_20251019143022.csv", file_type="csv")
     assert r.is_exported()
-    assert r.file_path == "/tmp/report.csv"
+    assert r.file_path == "/media/reports/2025/10/session_10_20251019143022.csv"
     assert r.file_type == "csv"
     assert r.generated_date is not None
 
 
 def test_to_from_dict_roundtrip():
-    r = Report(id=1, session_id=20, generated_by=7, generated_date="2025-01-01T00:00:00Z", file_path="/a/b", file_type="csv")
+    r = Report(id=1, session_id=20, generated_by=7, generated_date="2025-01-01T00:00:00Z", file_path="/media/reports/2025/01/session_20_20250101120000.csv", file_type="csv")
     d = r.to_dict()
     r2 = Report.from_dict(d)
     assert r2.session_id == 20
@@ -32,3 +32,12 @@ def test_invalid_report_validation():
         assert False, "validate should have raised"
     except ReportingError:
         pass
+
+
+def test_report_mark_exported_excel():
+    r = Report(id=2, session_id=15, generated_by=3)
+    r.mark_exported(file_path="/media/reports/2025/10/session_15_20251019150000.xlsx", file_type="excel")
+    assert r.is_exported()
+    assert r.file_path == "/media/reports/2025/10/session_15_20251019150000.xlsx"
+    assert r.file_type == "excel"
+    assert r.generated_date is not None
