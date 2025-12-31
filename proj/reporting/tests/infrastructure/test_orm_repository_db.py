@@ -2,6 +2,7 @@ from django.test import TestCase
 
 from reporting.infrastructure.repositories.orm_repository import OrmReportRepository
 from reporting.models import Report
+from reporting.domain.exceptions.core import ReportAlreadyExportedError
 
 
 class OrmReportRepositoryTests(TestCase):
@@ -44,5 +45,5 @@ class OrmReportRepositoryTests(TestCase):
         self.assertEqual(refreshed.file_type, "csv")
 
         # second update should raise because it's already exported
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ReportAlreadyExportedError):
             self.repo.update_export_details(created.pk, "/tmp/again.csv", "csv")
