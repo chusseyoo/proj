@@ -41,3 +41,30 @@ class ReportDTO:
     generated_date: Optional[str]
     generated_by: Optional[str]
     export_status: str  # "not_exported" | "exported"
+
+
+@dataclass
+class ExportResultDTO:
+    """Result of exporting a report to file."""
+
+    report_id: int
+    file_path: str
+    file_type: str
+    download_url: str
+    generated_date: Optional[str] = None
+
+
+@dataclass
+class DownloadFileDTO:
+    """Information needed to serve a file download."""
+
+    file_path: str
+    file_type: str
+    filename: str
+    content_type: str
+
+    @classmethod
+    def from_export_result(cls, file_path: str, file_type: str, filename: str) -> "DownloadFileDTO":
+        """Create from export result with appropriate content type."""
+        content_type = "text/csv" if file_type == "csv" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        return cls(file_path=file_path, file_type=file_type, filename=filename, content_type=content_type)

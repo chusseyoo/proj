@@ -9,23 +9,30 @@ Orchestration:
 """
 from typing import Any
 
+from reporting.application.dto.report_dto import ExportResultDTO
 from reporting.domain.ports import ReportRepositoryPort
+from reporting.domain.services.report_access_policy import ReportAccessPolicy
+from reporting.domain.exceptions import ReportNotFoundError, ReportAlreadyExportedError
 
 
 class ExportReportUseCase:
-	def __init__(self, report_repository: ReportRepositoryPort, exporter_factory: Any, storage_adapter: Any):
+	def __init__(self, report_repository: ReportRepositoryPort, exporter_factory: Any, storage_adapter: Any, access_policy: ReportAccessPolicy | None = None):
 		self.repo = report_repository
 		self.exporter_factory = exporter_factory
 		self.storage = storage_adapter
+		self.access_policy = access_policy or ReportAccessPolicy()
 
-	def execute(self, report_id: int, file_type: str, requested_by: Any) -> dict:
+	def execute(self, report_id: int, file_type: str, requested_by: Any) -> ExportResultDTO:
+		# permission check
+		self.access_policy.ensure_can_export(requested_by)
+
 		# load report
 		report = self.repo.get_report(report_id)
 		if not report:
-			raise ValueError(f"report {report_id} not found")
+			raise ReportNotFoundError(f"report {report_id} not found")
 
 		if getattr(report, "file_path", None):
-			raise ValueError("report already exported")
+			raise ReportAlreadyExportedError("report already exported")
 
 		payload = self.repo.get_report_details(report_id)
 		if not payload:
@@ -43,5 +50,14 @@ class ExportReportUseCase:
 
 		self.repo.update_export_details(report_id, final_path, file_type)
 
-		return {"file_path": final_path, "file_type": file_type}
+		generated_date = getattr(report, "generated_date", None)
+		download_url = f"/api/v1/reports/{report_id}/download/"
+
+		return ExportResultDTO(
+			report_id=report_id,
+			file_path=final_path,
+			file_type=file_type,
+			download_url=download_url,
+			generated_date=generated_date,
+		)
 
