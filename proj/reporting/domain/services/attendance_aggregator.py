@@ -13,7 +13,7 @@ count toward the official `present_count`.
 from typing import List, Any, Iterable, Dict, Optional
 from datetime import datetime
 
-from reporting.application.dto.report_dto import StudentRowDTO
+from reporting.domain.value_objects.student_attendance_row import StudentAttendanceRow
 
 
 class AttendanceAggregator:
@@ -35,9 +35,10 @@ class AttendanceAggregator:
     attendance record (preference: qualifying record; else latest record).
     """
 
-    def classify(self, session: Any, eligible_students: Iterable[Any], attendance_records: Iterable[Any]) -> List[StudentRowDTO]:
-        start_time: datetime = session.start_time
-        end_time: datetime = session.end_time
+    def classify(self, session: Any, eligible_students: Iterable[Any], attendance_records: Iterable[Any]) -> List[StudentAttendanceRow]:
+        # Support dict-like session objects used by some adapters
+        start_time: datetime = session.get("start_time") if isinstance(session, dict) else session.start_time
+        end_time: datetime = session.get("end_time") if isinstance(session, dict) else session.end_time
 
         # Group attendance records by student_id
         records_by_student: Dict[str, List[Dict]] = {}
@@ -47,7 +48,7 @@ class AttendanceAggregator:
                 continue
             records_by_student.setdefault(sid, []).append(r)
 
-        rows: List[StudentRowDTO] = []
+        rows: List[StudentAttendanceRow] = []
 
         for s in eligible_students:
             # support dict-like or object
@@ -113,7 +114,7 @@ class AttendanceAggregator:
                 lat = None
                 lon = None
 
-            row = StudentRowDTO(
+            row = StudentAttendanceRow(
                 student_id=str(sid),
                 student_name=name,
                 email=email,
