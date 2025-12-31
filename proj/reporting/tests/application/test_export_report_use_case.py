@@ -1,113 +1,56 @@
 """Tests for ExportReportUseCase."""
+import pytest
 from reporting.application.use_cases.export_report import ExportReportUseCase
 from reporting.domain.entities.report import Report
+from reporting.domain.exceptions.core import ReportNotFoundError, ReportAlreadyExportedError
 
 
-class FakeExporter:
-    def export_bytes(self, payload):
-        students = payload.get("students", [])
-        rows = [f"{s.get('student_id')},{s.get('status')}" for s in students]
-        return "\n".join(rows).encode("utf-8")
+def test_export_report_happy_path(fake_repo, fake_exporter_factory, fake_storage, admin_user):
+    uc = ExportReportUseCase(fake_repo, fake_exporter_factory, fake_storage)
+
+    result = uc.execute(2, file_type="csv", requested_by=admin_user)
+    assert result.file_type == "csv"
+    assert "/media/reports/" in result.file_path or "/tmp/" in result.file_path
+    assert fake_repo.updated_export is not None
 
 
-class FakeExporterFactory:
-    def get_exporter(self, file_type):
-        return FakeExporter()
+def test_export_report_missing_report(fake_repo, fake_exporter_factory, fake_storage, admin_user):
+    """If the report does not exist, raise ReportNotFoundError."""
+    uc = ExportReportUseCase(fake_repo, fake_exporter_factory, fake_storage)
+
+    with pytest.raises(ReportNotFoundError) as exc:
+        uc.execute(999, file_type="csv", requested_by=admin_user)
+
+    assert "999" in str(exc.value)
 
 
-class FakeStorage:
-    def __init__(self):
-        self.saved = {}
-
-    def save_export(self, content_bytes, filename_hint):
-        path = f"/tmp/{filename_hint}"
-        self.saved[path] = content_bytes
-        return path
-
-
-class FakeRepo:
-    def __init__(self):
-        self.report = Report(id=2, session_id=10, generated_by=1)
-        self.updated = None
-
-    def get_report(self, report_id):
-        return self.report if report_id == self.report.id else None
-
-    def get_report_details(self, report_id):
-        if report_id != self.report.id:
-            return None
-        return {"session": {"id": 10}, "students": [{"student_id": "s1", "status": "Present"}], "statistics": {"total_students": 1, "present_count": 1}}
-
-    def update_export_details(self, report_id, file_path, file_type):
-        self.updated = (report_id, file_path, file_type)
-
-
-def test_export_report_happy_path():
-    repo = FakeRepo()
-    factory = FakeExporterFactory()
-    storage = FakeStorage()
-    uc = ExportReportUseCase(repo, factory, storage)
-
-    result = uc.execute(2, file_type="csv", requested_by={"id": 1, "role": "admin"})
-    assert result["file_type"] == "csv"
-    assert result["file_path"].startswith("/tmp/")
-    assert repo.updated is not None
-
-
-def test_export_report_missing_report():
-    """If the report does not exist, raise ValueError."""
-    class RepoNoReport(FakeRepo):
-        def get_report(self, report_id):
-            return None
-
-    repo = RepoNoReport()
-    factory = FakeExporterFactory()
-    storage = FakeStorage()
-    uc = ExportReportUseCase(repo, factory, storage)
-
-    import pytest
-
-    with pytest.raises(ValueError) as exc:
-        uc.execute(999, file_type="csv", requested_by={"id": 1, "role": "admin"})
-
-    assert "report 999 not found" in str(exc.value)
-
-
-def test_export_report_already_exported():
+def test_export_report_already_exported(fake_repo, fake_exporter_factory, fake_storage, admin_user):
     """If the report already has a file_path, exporting should be blocked."""
-    class RepoAlreadyExported(FakeRepo):
-        def __init__(self):
-            super().__init__()
-            self.report.file_path = "/tmp/already"
+    # Mark report as already exported
+    fake_repo.reports[30].file_path = "/tmp/already"
+    fake_repo.reports[30].file_type = "csv"
 
-    repo = RepoAlreadyExported()
-    factory = FakeExporterFactory()
-    storage = FakeStorage()
-    uc = ExportReportUseCase(repo, factory, storage)
+    uc = ExportReportUseCase(fake_repo, fake_exporter_factory, fake_storage)
 
-    import pytest
+    with pytest.raises(ReportAlreadyExportedError) as exc:
+        uc.execute(30, file_type="csv", requested_by=admin_user)
 
-    with pytest.raises(ValueError) as exc:
-        uc.execute(2, file_type="csv", requested_by={"id": 1, "role": "admin"})
-
-    assert "report already exported" in str(exc.value)
+    assert "already exported" in str(exc.value)
 
 
-def test_export_report_storage_failure():
+def test_export_report_storage_failure(fake_repo, fake_exporter_factory, admin_user):
     """If storage.save_export raises, ensure exception propagates and repo.update_export_details is not called."""
+    from reporting.tests.conftest import FakeStorage
+    
     class BrokenStorage(FakeStorage):
         def save_export(self, content_bytes, filename_hint):
             raise IOError("disk full")
 
-    repo = FakeRepo()
-    factory = FakeExporterFactory()
     storage = BrokenStorage()
-    uc = ExportReportUseCase(repo, factory, storage)
-
-    import pytest
+    uc = ExportReportUseCase(fake_repo, fake_exporter_factory, storage)
 
     with pytest.raises(IOError) as exc:
-        uc.execute(2, file_type="csv", requested_by={"id": 1, "role": "admin"})
+        uc.execute(2, file_type="csv", requested_by=admin_user)
 
     assert "disk full" in str(exc.value)
-    assert repo.updated is None
+    assert fake_repo.updated_export is None
