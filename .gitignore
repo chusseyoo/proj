@@ -89,3 +89,8 @@ wheels/
 # Ignore any progress.md files used for per-layer notes
 **/progress.md
 progress.md
+
+# Implementation gap documentation (internal use only)
+ATTENDANCE_RECORDING_GAPS.md
+REPORTING_GAPS.md
+CODEBASE_IMPLEMENTATION_GAPS.md
