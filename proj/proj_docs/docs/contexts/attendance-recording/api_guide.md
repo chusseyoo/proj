@@ -33,8 +33,11 @@ Brief: Complete API specification for Attendance Recording. Public POST endpoint
 - Token in body allows simple form submission
 - No need for session management
 
+**Note**: All other contexts use standard `Authorization: Bearer <token>` headers. Attendance marking is the only flow that requires the token in the request body.
+
 **Security Considerations**:
-- Token expires after 30-60 minutes (set by Email Notification context)
+- Token expires after **30 minutes** (TOKEN_EXPIRY_MINUTES = 30, set by Email Notification context)
+- Aligns with attendance marking window: students have 30 minutes from session start to mark attendance
 - Single-use encouraged (duplicate prevention)
 - HTTPS required (token in transit)
 

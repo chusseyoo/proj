@@ -211,6 +211,21 @@ Mismatch detected → Attendance blocked, fraud logged
 
 ---
 
+## System Constants
+
+### EARTH_RADIUS_METERS
+```python
+EARTH_RADIUS_METERS = 6371000  # meters (Earth's mean radius)
+```
+
+**Purpose**: Used in Haversine formula to convert angular distance to meters
+
+**Accuracy**: ±1% for distances under 500km (sufficient for 30m validation)
+
+**Note**: Standard value used globally for GPS distance calculations; configured once and reused across all distance validations
+
+---
+
 ## Method Specifications
 
 ### calculate_distance(lat1: Decimal, lon1: Decimal, lat2: Decimal, lon2: Decimal) → float
@@ -227,7 +242,7 @@ Mismatch detected → Attendance blocked, fraud logged
 Convert degrees to radians
 Calculate differences in latitude and longitude
 Apply trigonometric functions (sin, cos, asin)
-Multiply by Earth's radius (6,371,000 meters)
+Multiply by Earth's radius (EARTH_RADIUS_METERS = 6,371,000 meters)
 Result: Distance in meters
 ```
 
@@ -539,28 +554,27 @@ Student: MIT (different program) → NOT Eligible ❌ (program mismatch)
 
 **Purpose**: Classify attendance as "present" or "late"
 
-**Logic**:
+**Logic** (both factors required for "present"):
 ```python
 if is_within_radius:
-    # Within radius - check timing
-    session_duration = session_data["time_ended"] - session_data["time_created"]
-    grace_period = session_duration * 0.25  # First 25% of session
-    
-    if time_recorded <= session_data["time_created"] + grace_period:
-        return "present"
-    else:
-        return "late"  # Marked late in session
+  # Within radius - check fixed 30-minute window from session start
+  time_threshold = session_data["time_created"] + timedelta(minutes=30)
+
+  if time_recorded <= time_threshold:
+    return "present"  # On-site AND within 30 minutes of start
+  else:
+    return "late"  # On-site but too late
 else:
-    # Outside radius - always late
-    return "late"
+  # Outside radius - always late (regardless of timing)
+  return "late"
 ```
 
-**Business Rules**:
-- Within radius + early → "present"
-- Within radius + late → "late"
-- Outside radius → "late" (regardless of timing)
+**Business Rules** (fixed window):
+- `is_within_radius=True` AND `time_recorded` within first 30 minutes of session start → **"present"**
+- `is_within_radius=False` OR `time_recorded` after the first 30 minutes → **"late"**
+- Timing window is fixed at 30 minutes from session start (not configurable per session)
 
-**Why Grace Period**: Allow students arriving slightly late without penalty
+**Why Fixed 30 Minutes**: Simple, predictable rule that prevents end-of-session marking while allowing brief late arrivals within the first half hour
 
 ---
 

@@ -44,7 +44,10 @@ This bounded context handles the actual attendance marking process including QR 
 - Student's location is captured and stored for audit
 - `is_within_radius` is calculated and stored (not editable)
 - `time_recorded` is set automatically (server timestamp, not client)
-- Status can be `present` (on time) or `late` (after grace period)
+- Status determination (both required for "present"):
+  - **Present**: `is_within_radius=True` AND marked within **30 minutes** of session start (fixed window)
+  - **Late**: `is_within_radius=False` OR marked after the first **30 minutes**
+  - Timing window is **fixed at 30 minutes** from session start (not configurable)
 
 ## Business Rules
 
@@ -89,14 +92,14 @@ When a student clicks the email link and scans QR code:
 7. **Attendance Recording**:
    - Create Attendance record with all details
    - Set `time_recorded` to current server time
-   - Set `status` based on timing (present vs late)
+  - Set `status` based on timing and location (present vs late)
    - Store `is_within_radius` result
    - Return success response
 
 ### Attendance Status Determination
 
-- **present**: Marked within session time window AND within 30m radius
-- **late**: Marked within session time window BUT outside 30m radius OR near end of window
+- **present**: Marked within first **30 minutes** of session start AND within 30m radius
+- **late**: Marked after the first **30 minutes** OR outside 30m radius
 - **absent**: No attendance record exists (determined during reporting)
 
 **Important Notes:**
@@ -112,6 +115,9 @@ from math import radians, cos, sin, asin, sqrt
 def haversine(lat1, lon1, lat2, lon2):
     """
     Calculate distance between two GPS coordinates in meters
+    
+    System Constant:
+    - EARTH_RADIUS_METERS = 6371000 (Earth's mean radius in meters)
     """
     # Convert to radians
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
@@ -122,7 +128,7 @@ def haversine(lat1, lon1, lat2, lon2):
     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
     c = 2 * asin(sqrt(a))
     
-    # Earth radius in meters
+    # Earth radius in meters (system constant: EARTH_RADIUS_METERS)
     r = 6371000
     
     return c * r
@@ -233,7 +239,7 @@ The system uses three layers of security:
 
 1. **JWT Token** (What you received in email):
    - Contains `student_profile_id` and `session_id`
-   - Time-limited (expires after 30-60 minutes)
+   - Time-limited (expires after **30 minutes**, matching attendance marking window)
    - Cannot be forged (signed with secret key)
 
 2. **QR Code** (What you have - physical ID card):

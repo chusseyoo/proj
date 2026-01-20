@@ -4,6 +4,42 @@ Brief: Complete specification for Attendance model. Defines attendance records w
 
 ---
 
+## Important Terminology
+
+⚠️ **Student Identifier Clarification**
+
+This document uses precise terminology for student identifiers. Understanding the distinction is critical:
+
+| Term | Type | Example | Description |
+|------|------|---------|-------------|
+| **`student_profile`** | Django ForeignKey field | `attendance.student_profile` | Relationship field name in Django model. Use for ORM traversal. |
+| **`student_profile_id`** | Integer (Primary Key) | `123` | Database column storing the foreign key. Auto-populated by Django. Used in queries and indexes. |
+| **`student_id`** | String (Institutional ID) | `"BCS/234344"` | Human-readable identifier. Format: `^[A-Z]{3}/[0-9]{6}$`. Stored in QR codes and displayed to users. |
+
+**Throughout This Guide:**
+- **Foreign key field** is referred to as `student_profile` (the Django relationship)
+- **Database column** is `student_profile_id` (the integer foreign key)
+- **QR codes contain** `student_id` (the institutional string identifier)
+
+**Usage Examples:**
+```python
+# Django ORM - Traverse relationship
+attendance.student_profile.student_id  # Returns "BCS/234344"
+
+# Database query - Use integer FK
+Attendance.objects.filter(student_profile_id=123)
+
+# QR code validation - Compare strings
+if scanned_qr == student.student_id:  # "BCS/234344" == "BCS/234344"
+```
+
+**Why Three Identifiers?**
+- `student_profile_id`: Database efficiency (integer foreign keys are faster)
+- `student_id`: Human usability (printed on ID cards, readable in reports)
+- `student_profile`: Developer convenience (Django relationship traversal)
+
+---
+
 ## Model Overview
 
 **Purpose**: Record verified student attendance for sessions with complete audit trail including location proof and timing.
@@ -106,8 +142,8 @@ Brief: Complete specification for Attendance model. Defines attendance records w
   - Index: **Yes** (filter by status for reports)
 
 **Status Determination Logic** (enforced in service layer):
-- **present**: `is_within_radius=True` AND marked early in session
-- **late**: `is_within_radius=False` OR marked near end of session
+- **present**: `is_within_radius=True` AND marked within first **30 minutes** of session start
+- **late**: `is_within_radius=False` OR marked after the first **30 minutes** of session start
 
 **Why Separate Field**: Status may be reviewed/changed by lecturer (e.g., excuse late arrival)
 
