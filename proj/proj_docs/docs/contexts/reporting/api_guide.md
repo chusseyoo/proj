@@ -108,10 +108,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       "total_students": 50,
       "present_count": 35,
       "present_percentage": 70.0,
-      "absent_count": 15,
-      "absent_percentage": 30.0,
-      "within_radius_count": 40,
-      "outside_radius_count": 3
+      "late_count": 15,
+      "late_percentage": 30.0
     },
     "students": [
       {
@@ -132,7 +130,19 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         "email": "jane@example.com",
         "program": "Computer Science",
         "stream": "Stream A",
-        "status": "Absent",
+        "status": "Late",
+        "time_recorded": "2025-10-19T08:35:10Z",
+        "within_radius": false,
+        "latitude": "-1.28500000",
+        "longitude": "36.82000000"
+      },
+      {
+        "student_id": "BCS/234346",
+        "student_name": "Bob Johnson",
+        "email": "bob@example.com",
+        "program": "Computer Science",
+        "stream": "Stream A",
+        "status": "Late",
         "time_recorded": null,
         "within_radius": null,
         "latitude": null,
@@ -148,14 +158,15 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
   Important: Official classification rule
 
-   - A student is classified as "Present" in the `status` field only when ALL of the following are true:
-     1. An attendance record exists for that student for the session.
-     2. The attendance `time_recorded` is within the session window (>= `time_created` and <= `time_ended`).
-     3. `within_radius` is `true` for that attendance record.
+   - A student is classified in the `status` field as follows:
+     - **"Present"**: Attendance record exists with `status = "present"` (validated by Attendance Recording during marking)
+     - **"Late"**: Any other case - either attendance record exists with `status = "late"` (marked outside time window OR outside radius) OR no attendance record exists
 
-   - Any attendance records that fail either the time-window check or the radius check are retained in the `students` rows for diagnostics (you will still see `time_recorded`, `within_radius`, `latitude`, `longitude`) but such records DO NOT count toward the official `present_count` in `statistics`. Use `within_radius` and `time_recorded` for diagnostic filtering if you need to reconcile records.
+   - The `status` field in attendance records is set by the Attendance Recording context based on validation of the 30-minute time window and 30m GPS radius. Reporting trusts this field and does NOT re-validate.
 
-   - In short: present_count = number of distinct students with at least one attendance record meeting (time window AND within_radius==true). Other counts such as `within_radius_count` are diagnostic and may differ from `present_count`.
+   - Statistics counts:
+     - `present_count`: Number of students with status="present"
+     - `late_count`: All other students (total_students - present_count)
 
 **Response Fields**:
 
@@ -221,9 +232,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 Notes on `statistics` fields:
 
-- `present_count`: official count of students classified as Present under the canonical rule (attendance exists AND time within session window AND `within_radius` == true).
-- `within_radius_count`: diagnostic count of attendance records with `within_radius` == true (may include records outside the session time window).
-- `outside_radius_count`: diagnostic count of attendance records with `within_radius` == false.
+- `present_count`: Count of students with attendance record status="present"
+- `late_count`: Count of all other students (includes students with status="late" AND students without any attendance record)
+- `present_percentage`, `late_percentage`: Calculated from counts divided by total students (percentages sum to 100%)
+
+---
 
 **Scenario**: Invalid session_id
 

@@ -1,13 +1,13 @@
 # testing_guide.md
 
-Brief: Complete testing strategy for Reporting context. Six parts plus fixtures covering report generation, Present/Absent classification, CSV/Excel export, file downloads, authorization (lecturer vs admin), and cross-context integration. Focus on business logic correctness and access control.
+Brief: Complete testing strategy for Reporting context. Six parts plus fixtures covering report generation, Present/Late classification, CSV/Excel export, file downloads, authorization (lecturer vs admin), and cross-context integration. Focus on business logic correctness and access control.
 
 ---
 
 ## Testing Strategy Overview
 
 **Why Testing Critical**:
-- **Classification logic**: Present/Absent must be correct
+- **Classification logic**: Present/Late must be correct
 - **Authorization**: Lecturer vs admin access boundaries
 - **File generation**: CSV/Excel format correctness
 - **Cross-context integration**: Session, User, Attendance data collection
@@ -349,7 +349,7 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 **Assertions**:
 - `get_eligible_students(session)` returns 15 students (all BCS)
 
-**Why Important**: Accurate "Absent" student count
+**Why Important**: Accurate Late student count (any non-present)
 
 ---
 
@@ -373,15 +373,15 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 
 **Setup**:
  - Session with 50 eligible students
- - 35 have attendance records that meet BOTH requirements: timestamp within the session window AND `is_within_radius`=True
- - 15 did not attend or did not meet both requirements (absent)
+ - 35 have attendance records with status="present"
+ - 15 have status="late" or no attendance record
 
 **Assertions**:
 - `total_students` = 50
 - `present_count` = 35, `present_percentage` = 70.0
-- `absent_count` = 15, `absent_percentage` = 30.0
+- `late_count` = 15, `late_percentage` = 30.0
 
-**Why Important**: Report header summary
+**Why Important**: Report header summary (two-status model Present/Late)
 
 ---
 
@@ -509,21 +509,21 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 
 ---
 
-### test_classify_students_some_absent
+### test_classify_students_some_late
 
-**Purpose**: Missing attendance classified as Absent
+**Purpose**: Missing attendance or late attendance classified as Late
 
 **Setup**:
 - 10 eligible students
-- 7 have attendance
-- 3 do not have attendance
+- 7 have attendance with status="present"
+- 3 do not have attendance (should be Late)
 
 **Assertions**:
 - 7 classified as "Present"
-- 3 classified as "Absent"
-- Absent students have NULL time_recorded, within_radius, latitude, longitude
+- 3 classified as "Late" (missing attendance)
+- Late students without attendance have NULL time_recorded, within_radius, latitude, longitude
 
-**Why Important**: **Core business logic** - Absent detection
+**Why Important**: **Core business logic** - Late detection (any non-present)
 
 ---
 
@@ -545,7 +545,7 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 **Setup**:
 - Attendance with status not equal to "present" (e.g., "excused"), is_within_radius=True
 
-**Expected (updated rule)**: Returns "Present" only if the attendance record also meets both required checks: the attendance timestamp is within the session time window AND `is_within_radius` is True. If either the timestamp falls outside the session window or `is_within_radius` is False, the student must be classified as "Absent". The attendance `status` value should still be recorded for diagnostics but does not override the time/radius requirements.
+**Expected (updated rule)**: Any status other than "present" results in "Late" (reporting trusts status field from attendance-recording; no re-validation). 
 
 ---
 
@@ -554,22 +554,22 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 **Purpose**: Attendance outside radius recorded
 
 **Setup**:
-- Attendance with status="present", is_within_radius=False
+- Attendance with status="late", is_within_radius=False
 
-**Expected (updated rule)**: Returns "Absent" (attendance exists but outside the required radius). The `within_radius` flag should be False and included in the row for diagnostics. Attendance outside the radius does NOT qualify as Present under the canonical rule.
+**Expected**: Returns "Late". The `within_radius` flag should be False and included in the row for diagnostics. Attendance outside the radius is treated as Late (not Present).
 
-**Why Important**: Diagnostics - record location accuracy separately from presence classification; being outside the radius disqualifies the attendance from counting as Present.
+**Why Important**: Diagnostics - record location accuracy separately from presence classification; being outside the radius remains Late.
 
 ---
 
-### test_classify_single_student_absent
+### test_classify_single_student_no_attendance
 
-**Purpose**: Absent classification
+**Purpose**: No attendance record classified as Late
 
 **Setup**:
 - No attendance (None)
 
-**Expected**: Returns "Absent"
+**Expected**: Returns "Late"
 
 ---
 
@@ -670,15 +670,15 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 **Purpose**: CSV file content correctness
 
 **Setup**:
-- Report data with students (Present, Absent)
- - Report data with students (Present, Absent)
+- Report data with students (Present, Late)
+ - Report data with students (Present, Late)
 
 **Assertions**:
 - Header row contains correct columns
 - Data rows match student data
 - Report header (comments) included
 - Statistics summary included
-- Absent students have empty fields for time/location
+- Late students without attendance have empty fields for time/location
 
 **Why Critical**: **Data accuracy**
 
@@ -708,7 +708,7 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 - Sheet 1 has report header
 - Sheet 2 has attendance data
 - Header row is bold
- - Status cells color-coded (Present=Green, Absent=Red)
+ - Status cells color-coded (Present=Green, Late=Orange)
 - Within Radius cells color-coded
 
 **Why Important**: Professional presentation
@@ -1044,15 +1044,15 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 
 ### test_report_for_session_with_no_attendance
 
-**Purpose**: All students absent
+**Purpose**: All students Late (no attendance records)
 
 **Setup**:
 - Session with 10 eligible students
 - No attendance records
 
 **Assertions**:
-- All 10 classified as "Absent"
- - Statistics: absent_count=10, present_count=0
+- All 10 classified as "Late"
+- Statistics: late_count=10, present_count=0
 
 ---
 
@@ -1061,13 +1061,13 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 **Purpose**: All students have attendance records but are outside the required radius
 
 **Setup**:
-- 10 students, all with is_within_radius=False
+- 10 students, all with is_within_radius=False and status="late"
 
 **Assertions (updated rule)**:
-- All 10 classified as "Absent" (attendance exists but all outside radius)
-- `within_radius_count` = 0 (diagnostic), present_count = 0
+- All 10 classified as "Late"
+- `present_count` = 0, `late_count` = 10
 
-**Note**: Attendance outside the radius is captured for diagnostics but does not count toward official Present totals.
+**Note**: Attendance outside the radius remains Late; diagnostics still capture within_radius.
 
 ---
 
@@ -1116,7 +1116,7 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 **Purpose**: Handle NULL values in CSV
 
 **Setup**:
-- Absent students (NULL time, location)
+- Late students without attendance (NULL time, location)
 
 **Assertions**:
 - CSV has empty cells (not "NULL" or "None")
@@ -1225,15 +1225,15 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 
 ### sample_attendance_records
 
-**Purpose**: Create varied attendance (present, absent) with diagnostic flags
+**Purpose**: Create varied attendance (present, late) with diagnostic flags
 
 **Returns**: List of Attendance instances
 
 **Breakdown**:
 - 5 "present", is_within_radius=True
-- 3 "present", is_within_radius=False (attendance exists but outside radius)
-- 2 absent (no attendance record)
-**Note**: Under the canonical classification rule only the first group (is_within_radius=True AND timestamp inside session window) will be considered Present in statistics; records in the second group are retained for diagnostics but counted as Absent.
+- 3 "late" (e.g., outside radius or window), is_within_radius=False
+- 2 no attendance record (these students will be Late)
+**Note**: Only the first group counts as Present in statistics; all others are Late.
 ---
 
 ### sample_report
@@ -1296,7 +1296,7 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 ## Critical Test Categories
 
 **Priority: CRITICAL** - Must pass before deployment:
-1. **Classification logic** - Present/Absent accuracy
+1. **Classification logic** - Present/Late accuracy
 2. **Authorization** - Lecturer vs admin boundaries
 3. **Cross-context integration** - Session, User, Attendance data
 4. **File generation** - CSV/Excel format correctness
@@ -1305,7 +1305,7 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 **Priority: HIGH** - Important for robustness:
 - File download headers
 - Error response formatting
-- Edge cases (no students, all absent)
+- Edge cases (no students, all late/no attendance)
 - Statistics calculation
 
 ---
@@ -1316,18 +1316,18 @@ Brief: Complete testing strategy for Reporting context. Six parts plus fixtures 
 
 **With Coverage**: `pytest --cov=reporting tests/reporting/`
 
-**Single Test**: `pytest tests/reporting/test_services.py::test_classify_students_some_absent`
+**Single Test**: `pytest tests/reporting/test_services.py::test_classify_students_some_late`
 
 ---
 
 ## Key Takeaways
 
-1. **Classification logic testing** - Present/Absent correctness critical
+1. **Classification logic testing** - Present/Late correctness critical
 2. **Authorization testing** - Lecturer vs admin access boundaries
 3. **File generation** - CSV and Excel format validation
 4. **Cross-context integration** - Session, User, Attendance data accuracy
 5. **Immutability enforcement** - Prevent re-export
-6. **Edge cases** - No students, all absent, large datasets
+6. **Edge cases** - No students, all late/no attendance, large datasets
 7. **File download** - Headers and content type correctness
 8. **Statistics accuracy** - Summary calculations verified
 
