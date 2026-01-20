@@ -34,8 +34,6 @@ PART 2: REPOSITORY TESTS
 
 PART 3: SERVICE TESTS
 - create_session: validates lecturer active and owns course; program/course exist; course in program; streams rules; time window; overlap; GPS
-- update_session: ownership and revalidation
-- end_now: ownership and minimum duration enforcement
 - get_session: ownership
 - list_my_sessions: filters and pagination
 
@@ -43,7 +41,6 @@ PART 4: API TESTS
 - POST /sessions: 201 on success; 403 non-lecturer; 404 invalid FKs; 409 overlap; 400 invalid time/GPS
 - GET /sessions: filtering and pagination
 - GET /sessions/{id}: ownership
-- POST /sessions/{id}/end-now: ownership
 
 PART 5: INTEGRATION TESTS
 - CourseOwnership: lecturer not assigned to course → blocked
@@ -52,7 +49,7 @@ PART 5: INTEGRATION TESTS
 - Session overlaps across same lecturer → blocked
 
 PART 6: EDGE CASE TESTS
-- Minimum duration (10 minutes) and maximum duration (24 hours)
+- Fixed duration: 30 minutes (session window equals token expiry)
 - Boundary coordinates (-90/90, -180/180)
 - Stream null vs provided when has_streams=True
 - List with empty DB (pagination zero results)

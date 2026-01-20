@@ -27,7 +27,8 @@ Methods:
   - Returns: Session entity
 
 - update(session_id, updates)
-  - Allowed: time_created, time_ended, stream_id, latitude, longitude, location_description
+  - Allowed: stream_id, latitude, longitude, location_description
+  - Note: time_created and time_ended cannot be updated (fixed 30-minute duration)
 
 - delete(session_id)
   - Hard delete; use only when safe

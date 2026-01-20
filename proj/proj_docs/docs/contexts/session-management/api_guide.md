@@ -64,10 +64,6 @@ Endpoints
   - 403: AuthorizationError
   - 404: SessionNotFoundError
 
-- POST /sessions/{session_id}/end-now
-  - Auth: Lecturer (owner)
-  - 200: SessionDTO
-
 Admin (optional)
 - GET /admin/sessions
   - Auth: Admin
@@ -78,6 +74,6 @@ Validation Rules (API layer hints)
 - Program required; stream optional but must belong to program
 - If program.has_streams=false ⇒ stream must be null
 - Course must belong to program; lecturer must be assigned to course and active
-- time_ended > time_created; 10m..24h duration
+- time_ended = time_created + 30 minutes (fixed window, matches token expiry)
 - No overlaps for the lecturer (time ranges)
 - latitude in [-90, 90]; longitude in [-180, 180]

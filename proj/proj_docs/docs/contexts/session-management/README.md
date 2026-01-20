@@ -73,7 +73,7 @@ This bounded context handles the creation and lifecycle management of attendance
 
 4. **Time Validation**:
    - `time_ended` must be after `time_created`
-   - Typical session duration: 30 minutes to 3 hours
+  - Session duration: 30 minutes (fixed, same as token expiry)
    - Sessions in the past are allowed (retroactive sessions)
    - Cannot create overlapping sessions (same course, same time window)
 
@@ -107,7 +107,7 @@ Students eligible for a session are determined by:
 
 ### Time Window Validation
 - `time_created` < `time_ended`
-- Duration between 30 minutes and 3 hours
+- Duration fixed at 30 minutes (time_ended = time_created + 30 minutes)
 - Both must be valid timestamps
 
 ### Location Validation

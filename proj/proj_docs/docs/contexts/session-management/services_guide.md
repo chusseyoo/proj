@@ -40,14 +40,11 @@ Methods
     - Lecturer active and assigned to course
     - Program, Course exist; Course belongs to Program
     - Program.has_streams rules (stream null when disabled; if provided, stream belongs to program)
-    - time_ended > time_created; duration within 10m..24h
+    - time_ended = time_created + 30 minutes (fixed window, matches token expiry)
     - No overlap for this lecturer
     - GPS ranges valid
   - Save via repository; emit SessionCreated { program_id, stream_id? }; return DTO with status
-- update_session(session_id, auth_lecturer_id, updates)
-  - Ownership required; revalidate time window, overlap, and targeting rules
-- end_now(session_id, auth_lecturer_id, now)
-  - Ownership required; set time_ended = max(now, time_created + min_duration); return DTO
+  - Note: Sessions cannot be updated or manually ended; they automatically end after 30 minutes
 - get_session(session_id, auth_lecturer_id)
   - Ownership required; return DTO with derived status
 - list_my_sessions(auth_lecturer_id, filters, page, page_size)

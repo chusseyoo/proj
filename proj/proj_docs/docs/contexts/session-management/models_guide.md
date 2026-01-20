@@ -52,7 +52,7 @@ Validations (Service-enforced)
 - If program.has_streams=False ⇒ stream must be NULL
 - If stream provided ⇒ it must belong to the program
 - No overlapping sessions for the same lecturer
-- Duration bounds recommended: 10 minutes to 24 hours
+- Duration fixed: 30 minutes (time_ended = time_created + 30 minutes)
 
 Example (conceptual)
 - program: BCS (id=1), course: CS201 (id=301), lecturer: 17
