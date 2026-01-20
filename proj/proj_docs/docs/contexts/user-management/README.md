@@ -196,7 +196,7 @@ CREATE TABLE users (
   email VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255),  -- NULLABLE for students
   role VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Lecturer', 'Student')),
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,  -- Lecturers auto-activated on registration, students set by admin
   date_joined TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
