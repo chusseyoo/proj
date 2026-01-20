@@ -255,10 +255,10 @@ Represents individual courses offered in programs (e.g., Data Structures, Databa
 ### Validation Rules (`clean()` method)
 
 **1. Course Code Format Validation**
-- Pattern: 2-4 uppercase letters + 3 digits
-- Use regex: `^[A-Z]{2,4}[0-9]{3}$`
+- Pattern: Exactly 6 uppercase alphanumeric characters
+- Use regex: `^[A-Z0-9]{6}$`
 - Raise `ValidationError` if format is invalid
-- Message: "Course code must be 2-4 uppercase letters followed by 3 digits (e.g., CS201, ENG301)"
+- Message: "Course code must be exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410)"
 
 **2. Course Code Uniqueness**
 - Django handles via `unique=True`

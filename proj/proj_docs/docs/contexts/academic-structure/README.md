@@ -71,7 +71,8 @@ This bounded context manages the academic organizational structure including pro
   - `course_name` (String, NOT NULL) - Full name of the course
     - Example: "Data Structures and Algorithms", "Database Systems"
   - `course_code` (String, NOT NULL, UNIQUE) - Short code for the course
-    - Example: "CS201", "ENG301", "MED405"
+    - Pattern: Exactly 6 uppercase alphanumeric characters
+    - Example: "BCS201", "ENG301", "MED405"
   - `program_id` (Foreign Key → Program.program_id, NOT NULL) - Program offering this course
   - `department_name` (String, NOT NULL) - Department teaching the course
   - `lecturer_id` (Foreign Key → LecturerProfile.lecturer_id, **NULLABLE**) - Assigned lecturer
@@ -156,9 +157,9 @@ This bounded context manages the academic organizational structure including pro
 - Should be descriptive (e.g., "Stream A", "Morning Batch")
 
 ### Course Code Validation
-- Pattern: 2-4 uppercase letters + 3 digits
-- Regex: `^[A-Z]{2,4}[0-9]{3}$`
-- Example: "CS201", "ENG301", "MATH101"
+- Pattern: Exactly 6 uppercase alphanumeric characters
+- Regex: `^[A-Z0-9]{6}$`
+- Example: "BCS012", "ENG301", "MAT101"
 - Must be unique across all courses
 
 ### Course Name Validation
@@ -207,12 +208,12 @@ CREATE INDEX idx_streams_year ON streams(year_of_study);
 CREATE TABLE courses (
   course_id SERIAL PRIMARY KEY,
   course_name VARCHAR(200) NOT NULL,
-  course_code VARCHAR(10) NOT NULL UNIQUE,
+  course_code VARCHAR(6) NOT NULL UNIQUE,
   program_id INTEGER NOT NULL REFERENCES programs(program_id) ON DELETE CASCADE,
   department_name VARCHAR(100) NOT NULL,
   lecturer_id INTEGER REFERENCES lecturer_profiles(lecturer_id) ON DELETE SET NULL,  -- NULLABLE
   
-  CONSTRAINT valid_course_code_format CHECK (course_code ~ '^[A-Z]{2,4}[0-9]{3}$')
+  CONSTRAINT valid_course_code_format CHECK (course_code ~ '^[A-Z0-9]{6}$')
 );
 
 CREATE UNIQUE INDEX idx_courses_course_code ON courses(course_code);
