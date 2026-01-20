@@ -32,14 +32,16 @@ The admin enters student information into the system:
 - QR code content must exactly match the registered student_id
 
 ### Lecturer Self-Registration / Activation
-- Lecturers register themselves (self-service) or request an account:
+- Lecturers register themselves (self-service):
   - First name
   - Last name
   - Email address
-  - Employee ID
   - Password
   - Department name
-- Admins may activate or manage lecturer accounts but CANNOT create new lecturer accounts directly.
+- Account is automatically activated upon registration
+- Lecturers can immediately create attendance sessions
+- Admins can deactivate accounts if needed
+
 **Note:** Students do NOT self-register or create accounts. All student data is entered by administrators.
 
 ---

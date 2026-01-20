@@ -283,7 +283,8 @@ except IntegrityError as e:
 - `get_by_id(session_id)` → Session
   - select_related('program', 'course', 'lecturer', 'stream')
 - `update(session_id, updates)` → Session
-  - Allowed: time_created, time_ended, stream_id, location_description
+  - Allowed: stream_id, latitude, longitude, location_description
+  - Note: time_created and time_ended cannot be updated (fixed 30-minute duration)
 - `delete(session_id)` → void
 
 **Query Methods**
@@ -340,7 +341,7 @@ except IntegrityError as e:
 
 **Statistics Queries**
 - `get_session_statistics(session_id)` → dict
-  - Returns: { present_count, late_count, absent_count, total_eligible }
+  - Returns: { present_count, late_count, total_eligible }
   - Used by Reporting context
 - `get_student_attendance_rate(student_profile_id, from_date, to_date)` → float
   - Returns: percentage (0-100)
@@ -444,11 +445,10 @@ except IntegrityError as e:
 - `get_attendance_for_session(session_id)` → list[Attendance]
   - Cross-context: Attendance Recording
 - `calculate_statistics(session_id)` → dict
-  - Returns: { total_eligible, present, late, absent, present_percent, late_percent, absent_percent }
-  - Uses AttendanceAggregator logic:
-    - Present: status="present" AND is_within_radius=True
-    - Late: status="late" OR is_within_radius=False
-    - Absent: No attendance record
+  - Returns: { total_eligible, present, late, present_percent, late_percent }
+  - Uses status field from attendance records:
+    - Present: Count of records with status="present"
+    - Late: total_eligible - present (includes both status="late" records AND students with no attendance record)
 
 **Indexes**
 - INDEX: session_id

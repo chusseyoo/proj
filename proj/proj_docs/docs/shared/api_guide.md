@@ -10,9 +10,23 @@ This document provides a comprehensive overview of all API endpoints across the 
 - **JWT Bearer Tokens**: Most endpoints use standard JWT authentication
   - Header format: `Authorization: Bearer <token>`
   - Token contains user_id, role, and expiration
-- **Token-Based (Body)**: Attendance recording uses tokens in request body (not header)
-  - Used for email link-based attendance marking
-  - Token in body: `{ "token": "eyJhbGc..." }`
+- **⚠️ Exception - Attendance Uses Token in Body (Not Bearer Header)**
+  - Students arrive via email/QR links where headers aren’t reliable
+  - Request body carries the token: `{ "token": "eyJhbGc..." }`
+  - Do not send `Authorization: Bearer ...` for attendance marking
+
+**Attendance Auth Example (only this flow differs)**
+```http
+POST /api/v1/attendance/mark
+Content-Type: application/json
+
+{
+  "token": "eyJhbGc...",
+  "scanned_student_id": "BCS/234344",
+  "latitude": "-1.28334000",
+  "longitude": "36.81667000"
+}
+```
 
 ### Authorization Roles
 - **Admin**: Full CRUD access across all contexts
@@ -41,6 +55,11 @@ This document provides a comprehensive overview of all API endpoints across the 
   }
 }
 ```
+
+**Error Code Convention**:
+- API responses use SCREAMING_SNAKE_CASE for error codes (e.g., `QR_CODE_MISMATCH`, `RESOURCE_NOT_FOUND`)
+- Python internal exceptions use PascalCase with Error suffix (e.g., `QRCodeMismatchError`, `ResourceNotFoundError`)
+- This guide shows API error codes only; implementation uses matching exception classes
 
 ### HTTP Status Codes
 - `200` - OK (successful query)
@@ -143,7 +162,6 @@ This document provides a comprehensive overview of all API endpoints across the 
 - `POST /sessions` - Create new session (lecturer only)
 - `GET /sessions` - List sessions (filterable by course, program, stream, time)
 - `GET /sessions/{session_id}` - Get session details
-- `POST /sessions/{session_id}/end-now` - End session early
 - `GET /admin/sessions` - List all sessions (admin only)
 
 **Authentication**: JWT Bearer (lecturer role required for creation)
@@ -151,7 +169,7 @@ This document provides a comprehensive overview of all API endpoints across the 
 **Key Features**:
 - Lecturer-only session creation
 - Geolocation validation (latitude/longitude)
-- Time window enforcement (10m-24h duration)
+- Time window enforcement: fixed 30-minute duration (matches token expiry)
 - No overlapping sessions for lecturer
 - Stream targeting (optional, must match program)
 - Automatic email notification trigger on session creation
@@ -200,7 +218,10 @@ This document provides a comprehensive overview of all API endpoints across the 
 - **Token-based auth**: Token in body (not Authorization header)
 - **Idempotent**: Returns 409 Conflict if already marked
 - **Immutable records**: No update or delete endpoints
-- **Status assignment**: "present" (within 30m radius) or "late" (outside radius)
+ - **Status logic**:
+  - **Present**: Within 30m radius AND within 30-minute session window (status="present")
+  - **Late**: Outside 30m radius OR outside 30-minute session window (status="late")
+  - Session ends after 30 minutes (time_ended = time_created + 30 minutes), no marking possible after
 - **Comprehensive error codes**: 14 error scenarios covered
 - **Fraud detection**: QR code mismatch logged
 
@@ -296,7 +317,7 @@ Response (201):
 - **Export formats**: CSV or Excel
 - **Immutability**: 409 Conflict on re-export (prevent overwrites)
 - **File download**: Proper Content-Disposition headers
-- **Statistics included**: Total students, present/late/absent counts, percentages
+- **Statistics included**: Total students, present/late counts and percentages
 - **Student list**: Complete attendance details with GPS coordinates
 
 **Generate Report Response (201)**:
@@ -310,8 +331,8 @@ Response (201):
       "total_students": 50,
       "present_count": 35,
       "present_percentage": 70.0,
-      "late_count": 8,
-      "absent_count": 7
+      "late_count": 15,
+      "late_percentage": 30.0
     },
     "students": [ ... ],
     "export_status": "not_exported"

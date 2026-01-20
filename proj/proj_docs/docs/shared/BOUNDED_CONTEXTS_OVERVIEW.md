@@ -55,13 +55,13 @@ The system is organized into **6 bounded contexts** plus a **shared documentatio
 
 **Key Features**:
 - Programs can have streams (has_streams flag)
-- One lecturer per course
+- One lecturer per course (optional at creation)
 - Admin-only management
 
 **Important Notes**:
 - `program_code` is 3 letters (used in student IDs)
 - `stream_id` nullable (NULL if program has no streams)
-- `lecturer_id` nullable in Course (can be unassigned initially)
+- `lecturer_id` nullable in Course (can be unassigned initially, assigned/unassigned via API)
 
 **Integration**:
 - Called by: User Management (validate program/stream), Session Management (validate course/program)
@@ -109,7 +109,7 @@ The system is organized into **6 bounded contexts** plus a **shared documentatio
 **Important Notes**:
 - `sent_at` nullable (NULL until sent)
 - JWT token contains: `{student_profile_id, session_id, exp}`
-- Token is short-lived (30-60 minutes)
+- Token is short-lived (30 minutes, fixed)
 - Recipient email NOT stored (fetched from User.email at send time)
 
 **Integration**:
@@ -154,13 +154,14 @@ The system is organized into **6 bounded contexts** plus a **shared documentatio
 **Key Features**:
 - View reports online
 - Export to CSV or Excel
-- Present/Late/Absent classification
+- Present/Late classification (two statuses only)
 - Lecturer sees own reports, Admin sees all
 
 **Important Notes**:
 - `file_path` and `file_type` nullable (NULL if not exported)
 - Multiple reports can exist for same session (historical snapshots)
-- Attendance status inferred: Present (attended + within radius), Late (attended but issues), Absent (no record)
+- Attendance status based on status field: Present (status="present"), Late (all other cases including no attendance record)
+- Reporting trusts the status field assigned by Attendance Recording context (does NOT re-validate time windows or radius)
 
 **Integration**:
 - Calls: Session Management (get session details), User Management (get student list), Attendance Recording (get attendance records), Academic Structure (get course info)
@@ -202,7 +203,7 @@ The system is organized into **6 bounded contexts** plus a **shared documentatio
 2. Reporting → Session Management: Get session details
 3. Reporting → User Management: Get eligible students list
 4. Reporting → Attendance Recording: Query attendance records
-5. Reporting: Classify students (Present/Late/Absent)
+5. Reporting: Classify students (Present/Late)
 6. Reporting: Create Report record
 7. Reporting: Display report online OR export to file
 ```

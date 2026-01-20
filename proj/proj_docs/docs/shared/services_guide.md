@@ -156,15 +156,14 @@ This document provides a system-wide view of all services across bounded context
 - **Purpose**: Create and manage attendance sessions
 - **Key Methods**:
   - `create_session(lecturer_id, payload)` → SessionDTO
-  - `update_session(session_id, lecturer_id, updates)` → SessionDTO
-  - `end_now(session_id, lecturer_id, now)` → SessionDTO
   - `get_session(session_id, lecturer_id)` → SessionDTO
   - `list_my_sessions(lecturer_id, filters, page, page_size)` → Paginated[SessionDTO]
+- **Note**: Sessions have fixed 30-minute duration and cannot be updated or manually ended
 - **Validations**:
   - Lecturer must own the course
   - Lecturer must be active
   - Program/stream targeting rules (stream must belong to program)
-  - Time window: time_ended > time_created (10m to 24h duration)
+  - Time window: time_ended = time_created + 30 minutes (fixed duration, matches token expiry)
   - No overlapping sessions for same lecturer
   - GPS coordinates within valid ranges
 - **Authorization**: Lecturer only (owns sessions)
@@ -268,7 +267,7 @@ This document provides a system-wide view of all services across bounded context
 - **Token Structure**:
   - Algorithm: HS256
   - Claims: student_profile_id, session_id, exp (expiry timestamp)
-  - Expiry: 30-60 minutes (configurable)
+  - Expiry: 30 minutes (fixed)
 - **Priority**: CRITICAL (security)
 
 **TemplateService**
@@ -317,19 +316,15 @@ This document provides a system-wide view of all services across bounded context
 #### Domain Services
 
 **AttendanceAggregator**
-- **Purpose**: Classify students as Present/Late/Absent
-- **Key Method**:
   - `aggregate_attendance(session, eligible_students, attendance_records)` → AggregatedData
-- **Classification Logic**:
-  - **Present**: status="present" AND is_within_radius=True
-  - **Late**: status="late" OR is_within_radius=False
-  - **Absent**: No attendance record exists
+  - **Present**: Attendance record exists with status="present"
+  - **Late**: All other cases (status="late" OR no attendance record)
 - **Priority**: CRITICAL (reporting accuracy)
 
 **StatisticsCalculator**
 - **Purpose**: Compute attendance percentages
 - **Key Methods**:
-  - `calculate_percentages(present, late, absent, total)` → percentages_dict
+  - `calculate_percentages(present, late, total)` → percentages_dict
 - **Priority**: MEDIUM
 
 #### Application Services

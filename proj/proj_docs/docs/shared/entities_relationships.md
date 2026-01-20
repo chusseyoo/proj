@@ -89,10 +89,10 @@ Represents academic courses taught in programs.
 |-----------|------|-------------|
 | `course_id` | Primary Key | Unique identifier for course |
 | `course_name` | String | Full name of the course |
-| `course_code` | String | Course code (e.g., CS101) |
+| `course_code` | String | Exactly 6 uppercase alphanumeric chars (e.g., BCS101) |
 | `program_id` | Foreign Key | References Program table |
 | `department_name` | String | Department offering the course |
-| `lecturer_id` | Foreign Key | References LecturerProfile table |
+| `lecturer_id` | Foreign Key | References LecturerProfile table (NULLABLE) |
 
 ---
 
@@ -215,6 +215,7 @@ Minimal email notification for attendance links.
 **Constraints**
 - UNIQUE (`session_id`, `student_profile_id`)
 - FK: ON DELETE CASCADE from Session and StudentProfile
+- lecturer_id: Foreign Key with ON DELETE SET_NULL (if lecturer deleted, course.lecturer_id = NULL)
 
 ```sql
 -- Schema snippet (reference)
@@ -346,7 +347,7 @@ Program (1) ──── (1..*) Course
 
 ## 7. LecturerProfile ←→ Course
 
-**Relationship Type:** One-to-Many
+**Relationship Type:** One-to-Many (Optional)
 
 ```
 LecturerProfile (1) ──── (0..*) Course
@@ -354,12 +355,14 @@ LecturerProfile (1) ──── (0..*) Course
 
 ### Description
 - Each Lecturer can teach **zero or more** Courses
-- Each Course is taught by **exactly one** Lecturer
+- Each Course may be taught by **zero or one** Lecturer (nullable)
 
 ### Business Rules
 - A lecturer may not be assigned to any courses initially
-- Each course must have exactly one assigned lecturer
-- Courses cannot have multiple lecturers (in this system)
+- A course may be created **without** an assigned lecturer (lecturer_id = NULL)
+- Lecturer assignment is optional at creation but can be assigned/unassigned via API
+- Each course has **at most one** assigned lecturer (no team teaching)
+- Courses can exist without lecturers for catalog purposes; sessions require lecturer assignment
 
 ---
 
@@ -726,7 +729,7 @@ CREATE TABLE users (
   email VARCHAR(100) NOT NULL UNIQUE,
   password VARCHAR(255),  -- Nullable for Students
   role VARCHAR(10) NOT NULL CHECK (role IN ('Admin', 'Lecturer', 'Student')),
-  is_active BOOLEAN DEFAULT TRUE,
+  is_active BOOLEAN DEFAULT TRUE,  -- Lecturers auto-activated on registration, students set by admin
   date_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -790,7 +793,7 @@ CREATE TABLE streams (
 CREATE TABLE courses (
   course_id SERIAL PRIMARY KEY,
   course_name VARCHAR(100) NOT NULL,
-  course_code VARCHAR(10) NOT NULL,
+  course_code VARCHAR(6) NOT NULL,
   program_id INTEGER NOT NULL REFERENCES programs(program_id) ON DELETE CASCADE,
   department_name VARCHAR(100) NOT NULL,
   lecturer_id INTEGER REFERENCES lecturer_profiles(lecturer_id) ON DELETE SET NULL
@@ -804,7 +807,7 @@ CREATE TABLE sessions (
   session_id SERIAL PRIMARY KEY,
   program_id INTEGER NOT NULL REFERENCES programs(program_id) ON DELETE CASCADE,
   course_id INTEGER NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
-  lecturer_id INTEGER NOT NULL REFERENCES lecturer_profiles(lecturer_id) ON DELETE CASCADE,
+  lecturer_id INTEGER NOT NULL REFERENCES lecturer_profiles(lecturer_id) ON DELETE PROTECT,
   stream_id INTEGER REFERENCES streams(stream_id) ON DELETE SET NULL,
   date_created DATE NOT NULL,
   time_created TIMESTAMP NOT NULL,
@@ -837,7 +840,7 @@ CREATE TABLE attendance (
 CREATE TABLE reports (
   report_id SERIAL PRIMARY KEY,
   session_id INTEGER NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
-  generated_by INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  generated_by INTEGER NOT NULL REFERENCES users(user_id) ON DELETE PROTECT,
   generated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   file_path VARCHAR(255) NOT NULL,
   file_type VARCHAR(10) NOT NULL CHECK (file_type IN ('CSV', 'Excel'))

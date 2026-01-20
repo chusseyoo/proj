@@ -234,7 +234,7 @@ This document provides a comprehensive overview of all Django models across the 
 **Key Fields**:
 - `course_id`: AutoField (PK)
 - `course_name`: CharField(200)
-- `course_code`: CharField(6, unique=True, format: `BCS012`)
+- `course_code`: CharField(6, unique=True, format: `^[A-Z0-9]{6}$` — exactly 6 uppercase alphanumeric)
 - `program`: ForeignKey(Program, CASCADE)
 - `department_name`: CharField(50, min=5, max=50)
 - `lecturer`: ForeignKey(LecturerProfile, SET_NULL, nullable)
@@ -316,7 +316,7 @@ This document provides a comprehensive overview of all Django models across the 
 **Validation** (service-enforced):
 - Lecturer must be active and assigned to course
 - Course must belong to program
-- Duration: 10 minutes to 24 hours
+- Duration: 30 minutes (fixed window, same as token expiry)
 - No overlapping sessions for lecturer
 
 **Relationships**:

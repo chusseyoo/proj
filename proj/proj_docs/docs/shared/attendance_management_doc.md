@@ -7,8 +7,10 @@ The **Attendance Management bounded context** handles all attendance tracking fu
 - Provides session creation, QR code scanning, and attendance recording.
 - Issues and verifies short-lived JWT tokens for attendance links.
 - Validates student location against lecturer location (30-meter radius).
-- Manages programs, streams, courses, and student enrollment.
+- **Uses** (but does not manage) programs, streams, courses for validation and eligibility checks.
 - No roles beyond Admin, Lecturer, and Student.
+
+**Note**: Programs, streams, and courses are **managed by the Academic Structure bounded context**. This context only validates against and queries that data.
 
 ---
 
@@ -31,7 +33,7 @@ The **Attendance Management bounded context** handles all attendance tracking fu
 
 ## 3. Functional Requirements
 
-- Register lecturers (self-registration with admin activation).
+- Register lecturers (self-registration, auto-activated).
 - Create attendance sessions for specific courses and programs/streams.
 - Generate short-lived attendance links with JWT tokens.
 - Send automated email notifications to students.
@@ -46,13 +48,13 @@ The **Attendance Management bounded context** handles all attendance tracking fu
 
 ### Lecturer Registration
 - **As a** new lecturer
-- **I want** to self-register with my email, password, name, employee ID, and department
-- **So that** I can create attendance sessions after admin activation
+- **I want** to self-register with my email, password, name, and department
+- **So that** I can immediately create attendance sessions (auto-activated upon registration)
 
 **Acceptance Criteria:**
 - Unique email
 - Password stored securely (hashed)
-- Admin can activate/deactivate accounts
+- Lecturer is automatically activated and can create sessions immediately
 - Password field is NOT nullable for lecturers
 
 ### Create Session
@@ -94,7 +96,7 @@ The **Attendance Management bounded context** handles all attendance tracking fu
 ### 5.1 Lecturer Registration Flow
 ```
 Lecturer → API /auth/register → RegisterLecturerHandler → UserService.registerLecturer()
-  → Password.hash → UserRepository.save() → Admin activates → Success response
+  → Password.hash → UserRepository.save() → Lecturer auto-activated → Success response
 ```
 
 ### 5.2 Create Session Flow
@@ -228,7 +230,10 @@ Lecturer → API /sessions/{id}/report → GenerateReportHandler
 
 ## 7. Database Schema
 
+**Note**: Programs, Streams, and Courses tables are managed by the **Academic Structure bounded context**. The schemas below show their structure for reference, but CRUD operations are handled by Academic Structure services/APIs.
+
 ```sql
+-- User Management Context Tables
 CREATE TABLE users (
   user_id SERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -236,7 +241,7 @@ CREATE TABLE users (
   first_name VARCHAR(255) NOT NULL,
   last_name VARCHAR(255) NOT NULL,
   role VARCHAR(50) NOT NULL,
-  is_active BOOLEAN DEFAULT FALSE,
+  is_active BOOLEAN DEFAULT TRUE,  -- Lecturers auto-activated on registration, students set by admin
   date_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -255,6 +260,7 @@ CREATE TABLE student_profiles (
   qr_code_data VARCHAR(255) NOT NULL
 );
 
+-- Academic Structure Context Tables (managed by Academic Structure context)
 CREATE TABLE programs (
   program_id SERIAL PRIMARY KEY,
   program_name VARCHAR(255) NOT NULL,
@@ -273,12 +279,13 @@ CREATE TABLE streams (
 CREATE TABLE courses (
   course_id SERIAL PRIMARY KEY,
   program_id INTEGER NOT NULL REFERENCES programs(program_id),
-  course_code VARCHAR(50) NOT NULL,
+  course_code VARCHAR(6) NOT NULL UNIQUE,
   course_name VARCHAR(255) NOT NULL,
   department_name VARCHAR(255) NOT NULL,
   lecturer_id INTEGER REFERENCES lecturer_profiles(lecturer_id)
 );
 
+-- Session Management Context Tables
 CREATE TABLE sessions (
   session_id SERIAL PRIMARY KEY,
   course_id INTEGER NOT NULL REFERENCES courses(course_id),
@@ -292,6 +299,7 @@ CREATE TABLE sessions (
   longitude DECIMAL(11, 8) NOT NULL
 );
 
+-- Attendance Recording Context Tables
 CREATE TABLE attendance (
   attendance_id SERIAL PRIMARY KEY,
   session_id INTEGER NOT NULL REFERENCES sessions(session_id),
@@ -304,6 +312,7 @@ CREATE TABLE attendance (
   UNIQUE(session_id, student_id)
 );
 
+-- Reporting Context Tables
 CREATE TABLE reports (
   report_id SERIAL PRIMARY KEY,
   session_id INTEGER NOT NULL REFERENCES sessions(session_id),
@@ -313,6 +322,7 @@ CREATE TABLE reports (
   file_type VARCHAR(50)
 );
 
+-- Email Notifications Context Tables
 CREATE TABLE email_notifications (
   email_id SERIAL PRIMARY KEY,
   session_id INTEGER NOT NULL REFERENCES sessions(session_id),
@@ -331,7 +341,7 @@ CREATE TABLE email_notifications (
 ## 8. API Endpoints
 
 ### Authentication
-- `POST /api/v1/auth/register` → register lecturer (requires admin activation)
+- `POST /api/v1/auth/register` → register lecturer (auto-activated)
 - `POST /api/v1/auth/login` → login, returns JWT
 
 ### Sessions
@@ -350,16 +360,17 @@ CREATE TABLE email_notifications (
 
 ## 9. Responsibilities & Module Boundaries
 
-- **Domain layer:** `User`, `Session`, `Attendance`, `Program`, `Stream`, `Course`, value objects, services
+- **Domain layer:** `User`, `Session`, `Attendance`, value objects, services (validates against Program, Stream, Course data)
 - **Application layer:** Handlers for each use case (RegisterLecturerHandler, CreateSessionHandler, MarkAttendanceHandler, etc.)
 - **Infrastructure layer:**
   - `UserRepositoryImpl` (SQL/ORM)
   - `SessionRepositoryImpl` (SQL/ORM)
   - `AttendanceRepositoryImpl` (SQL/ORM)
   - `EmailNotificationRepositoryImpl` (SQL/ORM)
-  - `ProgramRepositoryImpl` (SQL/ORM)
-  - `CourseRepositoryImpl` (SQL/ORM)
+  - **Integrations with Academic Structure context**: Read-only queries for ProgramRepository, CourseRepository, StreamRepository (validation only)
   - `JWTProvider` (token generation/verification)
   - `EmailService` (SMTP/background queue worker)
   - `LocationValidator` (Haversine distance calculation for 30m radius)
 - **Presentation layer:** REST controllers mapping HTTP → application handlers
+
+**Cross-Context Dependency**: Academic Structure context manages Programs, Streams, and Courses. This context only reads/validates against that data.

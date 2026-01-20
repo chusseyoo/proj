@@ -85,7 +85,7 @@ The system implements three distinct user roles with different permissions and c
 
 ### Account Lifecycle
 - **Registration**: Self-register via web interface
-- **Activation**: Automatically activated upon registration
+- **Activation**: Automatically activated upon registration (can create sessions immediately)
 - **Authentication**: Email and password required
 - **Status**: Active by default; admin can deactivate if needed
 

@@ -63,7 +63,6 @@ Authorization: Not required
   "password": "SecurePassword123!",
   "first_name": "John",
   "last_name": "Doe",
-  "employee_id": "EMP001",
   "department_name": "Computer Science"
 }
 ```
@@ -100,7 +99,6 @@ register_command = RegisterLecturerCommand(
     password=serializer.validated_data['password'],
     first_name=serializer.validated_data['first_name'],
     last_name=serializer.validated_data['last_name'],
-    employee_id=serializer.validated_data['employee_id'],
     department_name=serializer.validated_data['department_name'],
 )
 ```
@@ -135,7 +133,6 @@ user = User.create_lecturer(
     password_hash=PasswordHash(password_hash),
     first_name=first_name,
     last_name=last_name,
-    employee_id=employee_id,
     department_name=department_name
 )
 ```
@@ -204,7 +201,6 @@ Content-Type: application/json
   "first_name": "John",
   "last_name": "Doe",
   "role": "LECTURER",
-  "employee_id": "EMP001",
   "department_name": "Computer Science",
   "created_at": "2025-10-14T12:00:00.000Z"
 }
@@ -311,15 +307,14 @@ Content-Type: application/json
 
 ### 📡 **HTTP Request Entry**
 ```http
-POST /api/v1/attendance/scan/
-Authorization: Bearer {attendance_token}
+POST /api/v1/attendance/mark
 Content-Type: application/json
 
 {
-  "session_id": "session_uuid",
-  "student_id": "STU2024001",
-  "latitude": -1.2921,
-  "longitude": 36.8219
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "scanned_student_id": "BCS/234344",
+  "latitude": "-1.28334000",
+  "longitude": "36.81667000"
 }
 ```
 
@@ -327,7 +322,7 @@ Content-Type: application/json
 
 #### Step 1: Token Validation
 ```python
-# Extract attendance token from Authorization header
+# Extract attendance token from request body (token field)
 # Verify token signature, expiry, and claims (aud, sub, exp)
 ```
 
@@ -632,8 +627,8 @@ Content-Type: application/json
     "email": "john.doe@university.edu",
     "full_name": "John Doe",
     "department_name": "Computer Science",
-    "is_active": false,
-    "message": "Registration successful. Awaiting admin activation."
+    "is_active": true,
+    "message": "Registration successful. Account activated."
   }
 }
 ```
