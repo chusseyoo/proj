@@ -43,7 +43,7 @@ This bounded context handles email notification generation and delivery when ses
 **Important Notes:**
 - One email per student per session (enforced by UNIQUE constraint)
 - JWT token embedded in email link (e.g., `https://app.com/attendance?token=...`)
-- Token is short-lived (typically 30-60 minutes)
+- Token is short-lived (30 minutes)
 - Recipient email address is NOT stored (fetched from User.email at send time)
 - Email body/subject are NOT stored (generated dynamically)
 
@@ -60,7 +60,7 @@ When a session is created, the Email Notification Context:
 3. **For each eligible student**:
    - Generate JWT token with payload: `{student_profile_id, session_id, exp}`
    - Create EmailNotification record with status = `pending`
-   - Set `token_expires_at` (e.g., session start time + 60 minutes)
+   - Set `token_expires_at` (session start time + 30 minutes)
 4. **Queue emails** for background worker to send
 
 ### JWT Token Structure
@@ -78,7 +78,7 @@ When a session is created, the Email Notification Context:
 **Properties**:
 - **Secret**: Server-side secret key (environment variable)
 - **Algorithm**: HS256 (HMAC with SHA-256)
-- **Expiry**: Typically 30-60 minutes from session start
+- **Expiry**: 30 minutes from session start
 - **Single-use**: Token becomes invalid after attendance is marked
 
 **Important Notes:**

@@ -59,7 +59,7 @@ Brief: Complete specification for EmailNotification model. Defines notification 
   - Purpose: Token expiration timestamp
   - Why separate from JWT `exp`: Enables DB queries for expired tokens
   - Validation: Must be future time when created (CHECK constraint)
-  - Typical value: Session start time + 30-60 minutes
+  - Typical value: Session start time + 30 minutes
   - Use case: Query and cleanup expired tokens, enforce time limits
   - Nullable: **No**
 
@@ -214,7 +214,7 @@ email_notifications/
    - Student belongs to session's program/stream
 
 3. **Token expiry must be reasonable**
-   - Typically: session.time_created + 30-60 minutes
+   - Fixed: session.time_created + 30 minutes
    - Must be future time
 
 ### Status Transition Rules

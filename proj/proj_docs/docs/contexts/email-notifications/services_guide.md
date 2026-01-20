@@ -149,7 +149,7 @@ Brief: Complete service layer specification for Email Notifications. Three focus
    - Never use "none" algorithm (security vulnerability)
 
 3. **Token Expiry**:
-   - Short-lived (30-60 minutes)
+   - Short-lived (30 minutes)
    - Balance: too short = student misses window; too long = security risk
 
 4. **Single-Use Enforcement**:
