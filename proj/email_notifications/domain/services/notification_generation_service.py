@@ -37,13 +37,13 @@ class NotificationGenerationService:
     def __init__(
         self,
         jwt_service: JWTTokenService,
-        token_expiry_minutes: int = 60,
+        token_expiry_minutes: int = 30,
     ):
         """Initialize service dependencies.
 
         Args:
             jwt_service: JWT token generator
-            token_expiry_minutes: Token validity duration (default 60 mins)
+            token_expiry_minutes: Token validity duration (default 30 mins)
         """
         self.jwt_service = jwt_service
         self.token_expiry_minutes = token_expiry_minutes

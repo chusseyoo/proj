@@ -105,14 +105,4 @@ class Attendance(models.Model):
         r = 6371000  # Earth radius in meters
         return c * r
 
-    def was_on_time(self) -> bool:
-        """Check if attendance was marked early in session window.
-        
-        Helps distinguish 'present' from 'late but within time'.
-        """
-        if not hasattr(self, 'session'):
-            return False
-        # Consider on-time if marked in first half of session
-        session_duration = (self.session.time_ended - self.session.time_created).total_seconds()
-        time_since_start = (self.time_recorded - self.session.time_created).total_seconds()
-        return time_since_start < session_duration / 2
+

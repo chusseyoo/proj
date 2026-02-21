@@ -137,7 +137,7 @@ Represents subdivisions within programs (e.g., Stream A, Stream B). Only exists 
 | Field Name | Django Field Type | Parameters | Description |
 |------------|------------------|------------|-------------|
 | `stream_id` | AutoField | `primary_key=True` | Auto-incrementing primary key |
-| `stream_name` | CharField | `max_length=100, blank=False, null=False` | Name of stream (e.g., Stream A, Morning Batch) |
+| `stream_name` | CharField | `max_length=50, blank=False, null=False` | Name of stream (e.g., Stream A, Morning Batch) |
 | `program` | ForeignKey | `to=Program, on_delete=CASCADE, related_name='streams'` | Parent program |
 | `year_of_study` | IntegerField | `validators=[MinValueValidator(1), MaxValueValidator(4)]` | Which year (1-4) |
 
@@ -179,6 +179,7 @@ Represents subdivisions within programs (e.g., Stream A, Stream B). Only exists 
 
 **3. Stream Name Validation**
 - Minimum 2 characters
+- Maximum 50 characters (serializer-enforced)
 - Cannot be empty
 
 ### Save Override
@@ -215,7 +216,7 @@ Represents individual courses offered in programs (e.g., Data Structures, Databa
 |------------|------------------|------------|-------------|
 | `course_id` | AutoField | `primary_key=True` | Auto-incrementing primary key |
 | `course_name` | CharField | `max_length=200, blank=False, null=False` | Full name of course |
-| `course_code` | CharField | `max_length=6, unique=True, blank=False, null=False` | 6-character alphanumeric code (e.g., BCS012, BEG230, DIT410) |
+| `course_code` | CharField | `max_length=6, unique=True, blank=False, null=False` | Exactly 3 uppercase letters followed by 3 digits (e.g., BCS012, BEG230, DIT410) |
 | `program` | ForeignKey | `to=Program, on_delete=CASCADE, related_name='courses'` | Program offering this course |
 | `department_name` | CharField | `max_length=50, blank=False, null=False` | Department teaching course (5-50 chars) |
 | `lecturer` | ForeignKey | `to='user_management.LecturerProfile', on_delete=SET_NULL, null=True, blank=True, related_name='courses'` | Assigned lecturer (NULLABLE) |
@@ -255,10 +256,10 @@ Represents individual courses offered in programs (e.g., Data Structures, Databa
 ### Validation Rules (`clean()` method)
 
 **1. Course Code Format Validation**
-- Pattern: Exactly 6 uppercase alphanumeric characters
-- Use regex: `^[A-Z0-9]{6}$`
+- Pattern: Exactly 6 characters: 3 uppercase letters followed by 3 digits
+- Use regex: `^[A-Z]{3}[0-9]{3}$`
 - Raise `ValidationError` if format is invalid
-- Message: "Course code must be exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410)"
+- Message: "Course code must be exactly 3 uppercase letters followed by 3 digits (e.g., BCS012, BEG230, DIT410)"
 
 **2. Course Code Uniqueness**
 - Django handles via `unique=True`
@@ -284,17 +285,17 @@ Represents individual courses offered in programs (e.g., Data Structures, Databa
 **Create a custom validator function for course_code:**
 ```python
 def validate_course_code_format(value):
-    import re
-    pattern = r'^[A-Z0-9]{6}$'
-    if not re.match(pattern, value):
-        raise ValidationError('Course code must be exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410)')
+   import re
+   pattern = r'^[A-Z]{3}[0-9]{3}$'
+   if not re.match(pattern, value):
+      raise ValidationError('Course code must be exactly 3 uppercase letters followed by 3 digits (e.g., BCS012, BEG230, DIT410)')
 ```
 - Add to `course_code` field validators parameter
 
 ### Database Constraints
 
 **CHECK Constraints:**
-- `course_code` matches regex `^[A-Z0-9]{6}$`
+- `course_code` matches regex `^[A-Z]{3}[0-9]{3}$`
 
 **UNIQUE Constraints:**
 - `course_code` (enforced by field)
@@ -333,6 +334,14 @@ def validate_course_code_format(value):
 - **Stream side**: Access via `stream.students.all()` (reverse relation from User Management)
 - **StudentProfile side**: Access via `student_profile.stream` (can be None)
 - Cross-context relationship (defined in User Management context)
+
+---
+
+## Method Placement (Current Implementation)
+
+- ORM models focus on persistence concerns (fields, validation, normalization in `clean/save`).
+- Domain entities provide light helpers (e.g., `Program.requires_streams`, `Course.is_assigned_to_lecturer`).
+- Deletion safety checks and counts (e.g., `can_be_deleted`, student/session counts) are implemented in domain services and repositories rather than as ORM model methods.
 
 ---
 

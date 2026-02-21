@@ -33,17 +33,21 @@ class ProgramService:
         """Validate and normalize program code.
         
         Returns uppercase code if valid, raises ValidationError otherwise.
+        Must be exactly 3 uppercase letters (e.g., BCS, ENG, DIT).
         """
+        import re
+        
         if not code or not isinstance(code, str):
             raise ValidationError("Program code must be a non-empty string")
         
         normalized = code.strip().upper()
         
-        if len(normalized) < 2 or len(normalized) > 6:
-            raise ValidationError("Program code must be 2-6 characters")
-        
-        if not normalized.replace("_", "").isalnum():
-            raise ValidationError("Program code must contain only letters, digits, and underscores")
+        # Must be exactly 3 uppercase letters per documentation
+        pattern = r'^[A-Z]{3}$'
+        if not re.match(pattern, normalized):
+            raise ValidationError(
+                "Program code must be exactly 3 uppercase letters (e.g., BCS, ENG, DIT)"
+            )
         
         return normalized
 

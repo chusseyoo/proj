@@ -153,12 +153,12 @@ This bounded context manages the academic organizational structure including pro
 
 ### Stream Name Validation
 - Minimum 2 characters
-- Maximum 100 characters
+- Maximum 50 characters (serializer-enforced)
 - Should be descriptive (e.g., "Stream A", "Morning Batch")
 
 ### Course Code Validation
-- Pattern: Exactly 6 uppercase alphanumeric characters
-- Regex: `^[A-Z0-9]{6}$`
+- Pattern: Exactly 6 characters: 3 uppercase letters followed by 3 digits
+- Regex: `^[A-Z]{3}[0-9]{3}$`
 - Example: "BCS012", "ENG301", "MAT101"
 - Must be unique across all courses
 

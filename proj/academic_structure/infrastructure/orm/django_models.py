@@ -46,7 +46,7 @@ class Program(models.Model):
 class Stream(models.Model):
     stream_id = models.AutoField(primary_key=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name="streams")
-    stream_name = models.CharField(max_length=100, validators=[MinLengthValidator(2)])
+    stream_name = models.CharField(max_length=50, validators=[MinLengthValidator(2)])
     year_of_study = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(4)])
 
     class Meta:
@@ -97,7 +97,6 @@ class Course(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(default=True)
 
     class Meta:
         app_label = "academic_structure"

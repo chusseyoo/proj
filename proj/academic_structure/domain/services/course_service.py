@@ -40,24 +40,21 @@ class CourseService:
         """Validate and normalize course code.
         
         Returns uppercase code if valid, raises ValidationError otherwise.
-        Recommended pattern: 2-6 uppercase letters + 2-4 digits (e.g., CS201, ENG301).
+        Must be exactly 6 uppercase alphanumeric characters (e.g., BCS012, BEG230, DIT410).
         """
+        import re
+        
         if not code or not isinstance(code, str):
             raise ValidationError("Course code must be a non-empty string")
         
         normalized = code.strip().upper()
         
-        # Basic validation: should have letters and digits
-        if len(normalized) < 4 or len(normalized) > 10:
-            raise ValidationError("Course code must be 4-10 characters")
-        
-        # Check it has both letters and digits
-        has_letter = any(c.isalpha() for c in normalized)
-        has_digit = any(c.isdigit() for c in normalized)
-        
-        if not (has_letter and has_digit):
+        # Must be exactly 6 uppercase alphanumeric characters per documentation
+        pattern = r'^[A-Z0-9]{6}$'
+        if not re.match(pattern, normalized):
             raise ValidationError(
-                "Course code must contain both letters and digits (e.g., CS201)"
+                "Course code must be exactly 6 uppercase alphanumeric characters "
+                "(e.g., BCS012, BEG230, DIT410)"
             )
         
         return normalized

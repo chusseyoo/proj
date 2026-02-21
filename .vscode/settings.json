@@ -14,5 +14,10 @@
             "icon": "folder_type_root_opened",
             "format": "svg"
         }
-    ]
+    ],
+    "python.testing.pytestArgs": [
+        "proj"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
