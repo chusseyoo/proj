@@ -1,0 +1,88 @@
+sequenceDiagram
+    autonumber
+    participant S as Student
+    participant UI as Attendance Page
+    participant API as Attendance API
+    participant TokenSvc as Token Validator
+    participant ProfileRepo as StudentProfile Repository
+    participant SessionRepo as Session Repository
+    participant AttendanceRepo as Attendance Repository
+    participant DB as Database
+
+    S->>UI: Click email link with token
+    UI->>S: Display QR scan page
+    S->>UI: Scan QR code and allow GPS
+    UI->>API: POST /attendance/mark
+    Note right of UI: token, scanned_student_id, lat, lng
+
+    rect rgb(255, 240, 240)
+        Note over API,TokenSvc: 1.0 Token Check
+        API->>TokenSvc: Decode JWT token
+        TokenSvc->>TokenSvc: Validate expiry 30 mins
+        TokenSvc-->>API: student_profile_id, session_id
+    end
+
+    alt Token Invalid or Expired
+        API-->>UI: 401 TOKEN_EXPIRED
+        UI-->>S: Session link expired
+    end
+
+    rect rgb(240, 255, 240)
+        Note over API,ProfileRepo: 2.0 Fraud Check
+        API->>ProfileRepo: get_by_id student_profile_id
+        ProfileRepo->>DB: SELECT student_id FROM student_profiles
+        DB-->>ProfileRepo: student_id
+        ProfileRepo-->>API: StudentProfile
+        API->>API: Compare scanned_student_id vs profile.student_id
+    end
+
+    alt QR Mismatch
+        API-->>UI: 400 QR_CODE_MISMATCH
+        UI-->>S: QR code does not match your account
+    end
+
+    rect rgb(240, 240, 255)
+        Note over API,SessionRepo: 3.0 Location Check
+        API->>SessionRepo: get_by_id session_id
+        SessionRepo->>DB: SELECT latitude, longitude FROM sessions
+        DB-->>SessionRepo: session coordinates
+        SessionRepo-->>API: Session
+        API->>API: Calculate Haversine distance
+        API->>API: Set is_within_radius if distance <= 30m
+    end
+
+    rect rgb(255, 255, 240)
+        Note over API,SessionRepo: 4.0 Time Check
+        API->>API: Check time_created <= now <= time_ended
+        API->>API: Determine status present or late
+    end
+
+    alt Session Not Active
+        API-->>UI: 410 SESSION_ENDED
+        UI-->>S: Session has ended
+    end
+
+    rect rgb(255, 240, 255)
+        Note over API,AttendanceRepo: 5.0 Duplicate Check
+        API->>AttendanceRepo: exists student_profile_id, session_id
+        AttendanceRepo->>DB: SELECT FROM attendance WHERE...
+        DB-->>AttendanceRepo: exists boolean
+    end
+
+    alt Duplicate Found
+        API-->>UI: 409 DUPLICATE_ATTENDANCE
+        UI-->>S: Already marked attendance
+    end
+
+    rect rgb(240, 255, 255)
+        Note over API,DB: 6.0 Save Attendance
+        API->>AttendanceRepo: create attendance_record
+        AttendanceRepo->>DB: INSERT INTO attendance
+        Note right of DB: student_profile_id, session_id, time_recorded, lat, lng, status, is_within_radius
+        DB-->>AttendanceRepo: attendance_id
+        AttendanceRepo-->>API: Attendance
+    end
+
+    API-->>UI: 201 Created
+    Note right of API: success, status, is_within_radius
+    UI-->>S: Attendance confirmed

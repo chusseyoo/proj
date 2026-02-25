@@ -1,0 +1,56 @@
+flowchart TB
+    %% External Entity
+    E1[Student]
+
+    %% Data Stores
+    D1[(D1 Session)]
+    D2[(D2 Attendance)]
+    D3[(D3 StudentProfile)]
+    D4[(D4 EmailNotification)]
+
+    %% Process 1: Token Validation
+    P1([1.0 Token Check])
+
+    %% Process 2: Fraud Detection
+    P2([2.0 Fraud Check])
+
+    %% Process 3: Location Validation
+    P3([3.0 Location Check])
+
+    %% Process 4: Time Validation
+    P4([4.0 Time Check])
+
+    %% Process 5: Duplicate Check
+    P5([5.0 Duplicate Check])
+
+    %% Process 6: Save Attendance
+    P6([6.0 Save Attendance])
+
+    %% Input from Student
+    E1 -->|token, scanned_student_id, lat, lng| P1
+
+    %% Token Check - decode JWT, validate expiry, extract session_id
+    D4 -->|student_profile_id, session_id, token_expires_at| P1
+    P1 -->|session_id, student_profile_id| P2
+
+    %% Fraud Check - compare scanned_student_id vs token student_id
+    D3 -->|student_id| P2
+    P2 -->|verified_student_profile_id| P3
+
+    %% Location Check - Haversine distance calculation
+    D1 -->|latitude, longitude| P3
+    P3 -->|is_within_radius| P4
+
+    %% Time Check - verify session is active
+    D1 -->|time_created, time_ended| P4
+    P4 -->|status| P5
+
+    %% Duplicate Check - prevent duplicate attendance
+    D2 -->|existing_records| P5
+    P5 -->|no_duplicate| P6
+
+    %% Save Attendance Record
+    P6 -->|attendance_record| D2
+
+    %% Output to Student
+    P6 -->|success, status, is_within_radius| E1

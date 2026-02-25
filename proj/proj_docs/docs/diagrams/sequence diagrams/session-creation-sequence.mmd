@@ -1,0 +1,90 @@
+sequenceDiagram
+    autonumber
+    participant L as Lecturer
+    participant UI as Web Interface
+    participant API as Session API
+    participant Auth as JWT Auth
+    participant CourseRepo as Course Repository
+    participant SessionRepo as Session Repository
+    participant ProfileRepo as StudentProfile Repository
+    participant EmailSvc as Email Notification Service
+    participant Worker as Background Worker
+    participant DB as Database
+
+    L->>UI: Login with email and password
+    UI->>API: POST /auth/login
+    API-->>UI: JWT Bearer token
+    UI-->>L: Dashboard
+
+    L->>UI: Create attendance session
+    L->>UI: Select course, program, stream, capture GPS
+    UI->>API: POST /sessions
+    Note right of UI: Authorization Bearer token
+    Note right of UI: course_id, program_id, stream_id, lat, lng
+
+    rect rgb(255, 240, 240)
+        Note over API,Auth: Authentication
+        API->>Auth: Validate JWT Bearer
+        Auth-->>API: lecturer_id, role
+    end
+
+    alt Unauthorized
+        API-->>UI: 401 UNAUTHORIZED
+        UI-->>L: Please login again
+    end
+
+    rect rgb(240, 255, 240)
+        Note over API,CourseRepo: Validate Course Ownership
+        API->>CourseRepo: get_by_id course_id
+        CourseRepo->>DB: SELECT lecturer_id FROM courses
+        DB-->>CourseRepo: Course
+        CourseRepo-->>API: Course with lecturer_id
+        API->>API: Check course.lecturer_id == token.lecturer_id
+    end
+
+    alt Not Course Owner
+        API-->>UI: 403 FORBIDDEN
+        UI-->>L: You are not assigned to this course
+    end
+
+    rect rgb(240, 240, 255)
+        Note over API,DB: Create Session Record
+        API->>SessionRepo: create session
+        SessionRepo->>DB: INSERT INTO sessions
+        Note right of DB: session_id, course_id, program_id, stream_id, lecturer_id, time_created, time_ended, lat, lng
+        DB-->>SessionRepo: session_id
+        SessionRepo-->>API: Session
+    end
+
+    rect rgb(255, 255, 240)
+        Note over API,ProfileRepo: Identify Eligible Students
+        API->>ProfileRepo: list_by_program program_id, stream_id
+        ProfileRepo->>DB: SELECT FROM student_profiles WHERE program_id AND stream_id
+        DB-->>ProfileRepo: List of StudentProfiles
+        ProfileRepo-->>API: eligible_students
+    end
+
+    rect rgb(255, 240, 255)
+        Note over API,EmailSvc: Generate Email Notifications
+        loop For each eligible student
+            API->>EmailSvc: generate_notification student_profile_id, session_id
+            EmailSvc->>EmailSvc: Generate JWT token with 30 min expiry
+            Note right of EmailSvc: payload student_profile_id, session_id, exp
+            EmailSvc->>DB: INSERT INTO email_notifications
+            Note right of DB: session_id, student_profile_id, token, token_expires_at, status pending
+        end
+    end
+
+    API-->>UI: 201 Created
+    Note right of API: session_id, time_created, time_ended, student_count
+    UI-->>L: Session created successfully
+
+    rect rgb(240, 255, 255)
+        Note over Worker,DB: Background Email Delivery
+        Worker->>DB: SELECT pending notifications
+        loop For each pending email
+            Worker->>DB: Get student email from users table
+            Worker->>Worker: Send email with attendance link
+            Worker->>DB: UPDATE status sent, sent_at now
+        end
+    end

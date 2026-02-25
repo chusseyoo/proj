@@ -1,0 +1,59 @@
+flowchart TB
+    %% External Entity
+    E1[Lecturer]
+
+    %% Data Stores
+    D1[(D1 Course)]
+    D2[(D2 Session)]
+    D3[(D3 StudentProfile)]
+    D4[(D4 EmailNotification)]
+    D5[(D5 User)]
+
+    %% Process 1: Authentication
+    P1([1.0 Authenticate Lecturer])
+
+    %% Process 2: Validate Course Ownership
+    P2([2.0 Validate Course Ownership])
+
+    %% Process 3: Create Session Record
+    P3([3.0 Create Session Record])
+
+    %% Process 4: Identify Eligible Students
+    P4([4.0 Identify Eligible Students])
+
+    %% Process 5: Generate Notifications
+    P5([5.0 Generate Email Notifications])
+
+    %% Process 6: Queue Email Delivery
+    P6([6.0 Queue Email Delivery])
+
+    %% Input from Lecturer
+    E1 -->|JWT Bearer token| P1
+    E1 -->|course_id, program_id, stream_id, lat, lng| P2
+
+    %% Authentication
+    D5 -->|user_id, role, is_active| P1
+    P1 -->|lecturer_id| P2
+
+    %% Course Ownership Validation
+    D1 -->|course.lecturer_id, course.program_id| P2
+    P2 -->|validated_course_id| P3
+
+    %% Session Creation
+    P3 -->|session_record| D2
+    D2 -->|session_id| P4
+
+    %% Identify Eligible Students
+    D3 -->|students by program_id and stream_id| P4
+    P4 -->|eligible_student_list| P5
+
+    %% Generate Notifications with JWT tokens - 30 min expiry per student
+    P5 -->|notification_records| D4
+
+    %% Queue for Background Delivery
+    D4 -->|pending_notifications| P6
+    D5 -->|student email addresses| P6
+    P6 -->|status update sent| D4
+
+    %% Output to Lecturer
+    P3 -->|session_id, time_created, time_ended, student_count| E1

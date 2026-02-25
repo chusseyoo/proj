@@ -1,0 +1,31 @@
+flowchart LR
+    %% External Entity
+    E1[Student]
+
+    %% Central Process
+    P0([0 - Attendance Marking System])
+
+    %% Data Stores
+    D1[(D1 Session)]
+    D2[(D2 Attendance)]
+    D3[(D3 StudentProfile)]
+    D4[(D4 EmailNotification)]
+
+    %% Input Data Flows from Student
+    E1 -->|token, scanned_student_id, latitude, longitude| P0
+
+    %% Output Data Flows to Student
+    P0 -->|success_status, status present or late, is_within_radius| E1
+
+    %% Token Validation - EmailNotification
+    D4 -->|student_profile_id, session_id, token_expires_at| P0
+
+    %% Session Data - for location and time validation
+    D1 -->|latitude, longitude, time_created, time_ended| P0
+
+    %% StudentProfile - for QR fraud check
+    D3 -->|student_id, program_id, stream_id| P0
+
+    %% Attendance - duplicate check and record saving
+    D2 -->|existing_attendance_records| P0
+    P0 -->|new_attendance_record| D2

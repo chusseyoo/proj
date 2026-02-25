@@ -1,0 +1,30 @@
+flowchart LR
+    %% External Entity
+    E1[Lecturer]
+
+    %% Central Process
+    P0([0 - Session Creation System])
+
+    %% Data Stores
+    D1[(D1 Course)]
+    D2[(D2 Session)]
+    D3[(D3 StudentProfile)]
+    D4[(D4 EmailNotification)]
+
+    %% Input from Lecturer
+    E1 -->|course_id, program_id, stream_id, latitude, longitude| P0
+
+    %% Output to Lecturer
+    P0 -->|session_id, time_created, time_ended, student_count| E1
+
+    %% Course validation
+    D1 -->|lecturer_id, program_id| P0
+
+    %% Session persistence
+    P0 -->|session_record| D2
+
+    %% Student eligibility query
+    D3 -->|eligible_students| P0
+
+    %% Email notification generation
+    P0 -->|notification_records| D4
