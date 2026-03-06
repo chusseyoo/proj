@@ -9,9 +9,9 @@ class ProgramAdmin(admin.ModelAdmin):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("course_code", "course_name", "program", "department_name", "lecturer", "is_active")
+    list_display = ("course_code", "course_name", "program", "department_name", "lecturer")
     search_fields = ("course_code", "course_name")
-    list_filter = ("program", "department_name", "is_active")
+    list_filter = ("program", "department_name")
 
 @admin.register(Stream)
 class StreamAdmin(admin.ModelAdmin):
