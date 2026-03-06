@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecturer Registration - Geo-Attendance System</title>
+    <script src="tailwindcss.js"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen py-12">
+
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mb-4">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900">Create an Account</h2>
+            <p class="text-sm text-gray-500 mt-2">Register as a lecturer to manage attendance</p>
+        </div>
+
+        <!-- Alert Messages -->
+        <div id="error-alert" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p id="error-message" class="text-sm text-red-700">Registration failed.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="success-alert" class="hidden bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-green-700">Registration successful! Redirecting to login...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="register-form" class="space-y-5">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                    <div class="mt-1">
+                        <input id="first_name" name="first_name" type="text" required 
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                    <div class="mt-1">
+                        <input id="last_name" name="last_name" type="text" required 
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+                <div class="mt-1">
+                    <input id="email" name="email" type="email" required 
+                        class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                        placeholder="lecturer@university.edu">
+                </div>
+            </div>
+
+            <div>
+                <label for="department_name" class="block text-sm font-medium text-gray-700">Department</label>
+                <div class="mt-1">
+                    <input id="department_name" name="department_name" type="text" required 
+                        class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="e.g. Computer Science">
+                </div>
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <div class="mt-1">
+                    <input id="password" name="password" type="password" required minlength="8"
+                        class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                        placeholder="••••••••">
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters long.</p>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" id="submit-btn" 
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <span id="btn-text">Register</span>
+                    <!-- Loading Spinner -->
+                    <svg id="btn-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </form>
+
+        <!-- Login Link -->
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">
+                Already have an account? 
+                <a href="lecturer-login.html" class="font-medium text-blue-600 hover:text-blue-500">Sign in here</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000'; 
+
+        document.getElementById('register-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // UI Elements
+            const firstName = document.getElementById('first_name').value;
+            const lastName = document.getElementById('last_name').value;
+            const email = document.getElementById('email').value;
+            const departmentName = document.getElementById('department_name').value;
+            const password = document.getElementById('password').value;
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnSpinner = document.getElementById('btn-spinner');
+            const errorAlert = document.getElementById('error-alert');
+            const errorMessage = document.getElementById('error-message');
+            const successAlert = document.getElementById('success-alert');
+
+            // Reset UI state
+            errorAlert.classList.add('hidden');
+            successAlert.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            btnText.textContent = 'Registering...';
+            btnSpinner.classList.remove('hidden');
+
+            try {
+                // Call the Django API endpoint for lecturer registration
+                const response = await fetch(`${API_BASE_URL}/api/users/register/lecturer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        department_name: departmentName,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok || response.status === 201) {
+                    // Show success message
+                    successAlert.classList.remove('hidden');
+                    
+                    // Redirect to login page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'lecturer-login.html';
+                    }, 2000);
+                } else {
+                    // Handle API errors (e.g., email already exists)
+                    let errorText = 'Registration failed. Please try again.';
+                    
+                    // Try to extract specific error messages from Django REST Framework
+                    if (typeof data === 'object') {
+                        const errors = [];
+                        for (const [key, value] of Object.entries(data)) {
+                            if (Array.isArray(value)) {
+                                errors.push(`${key}: ${value[0]}`);
+                            } else if (typeof value === 'string') {
+                                errors.push(value);
+                            }
+                        }
+                        if (errors.length > 0) {
+                            errorText = errors.join(' | ');
+                        }
+                    }
+                    
+                    throw new Error(errorText);
+                }
+
+            } catch (error) {
+                // Show error message
+                errorMessage.textContent = error.message;
+                errorAlert.classList.remove('hidden');
+                
+                // Restore button state (only on error, on success we are redirecting)
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btnText.textContent = 'Register';
+                btnSpinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Geo-Attendance System</title>
+    <script src="tailwindcss.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7"></path>
+                            </svg>
+                        </div>
+                        <span class="font-bold text-xl text-gray-900">Geo-Attendance</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="lecturer-dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Dashboard
+                        </a>
+                        <a href="lecturer-courses.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            My Courses
+                        </a>
+                        <a href="lecturer-reports.html" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Reports
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="ml-3 relative flex items-center space-x-4">
+                        <span id="user-name" class="text-sm font-medium text-gray-700">Loading...</span>
+                        <button id="logout-btn" class="text-sm text-red-600 hover:text-red-800 font-medium">
+                            Sign out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        
+        <!-- Page Header -->
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="flex-1 min-w-0">
+                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                    Attendance Reports
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">Generate and view attendance reports for your sessions.</p>
+            </div>
+        </div>
+
+        <!-- Sessions for Reporting Table -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Available Sessions</h3>
+                <p class="mt-1 text-sm text-gray-500">Select a session to generate or view its attendance report.</p>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="table-loading" class="p-8 text-center">
+                <svg class="animate-spin mx-auto h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-2 text-sm text-gray-500">Loading sessions...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="table-empty" class="hidden p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No sessions found</h3>
+                <p class="mt-1 text-sm text-gray-500">You need to create and complete sessions before generating reports.</p>
+            </div>
+
+            <!-- Data Table -->
+            <table id="sessions-table" class="hidden min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody id="sessions-tbody" class="bg-white divide-y divide-gray-200">
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            
+            if (!token || token === 'undefined' || token === 'null') {
+                window.location.href = 'lecturer-login.html';
+                return;
+            }
+
+            try {
+                const base64Url = token.split('.')[1];
+                if (!base64Url) throw new Error('Invalid token format');
+                
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                
+                const payload = JSON.parse(jsonPayload);
+                const userId = payload.user_id;
+
+                await fetchUserProfile(userId, token);
+                await fetchSessionsForReports(token);
+
+            } catch (error) {
+                console.error('Error initializing reports page:', error);
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                window.location.href = 'lecturer-login.html';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = 'lecturer-login.html';
+        });
+
+        async function fetchUserProfile(userId, token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('user-name').textContent = `${data.first_name} ${data.last_name}`;
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile:', error);
+            }
+        }
+
+        async function fetchSessionsForReports(token) {
+            const loadingState = document.getElementById('table-loading');
+            const emptyState = document.getElementById('table-empty');
+            const table = document.getElementById('sessions-table');
+            const tbody = document.getElementById('sessions-tbody');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/session-management/v1/sessions/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const sessions = data.results || data;
+
+                    loadingState.classList.add('hidden');
+
+                    if (!sessions || sessions.length === 0) {
+                        emptyState.classList.remove('hidden');
+                    } else {
+                        tbody.innerHTML = '';
+                        sessions.forEach(session => {
+                            const date = new Date(session.start_time).toLocaleDateString();
+                            const time = new Date(session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                            
+                            let statusBadge = session.is_active 
+                                ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>`
+                                : `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Ended</span>`;
+
+                            const row = `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">Course ID: ${session.course_id}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">${date}</div>
+                                        <div class="text-sm text-gray-500">${time}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        ${statusBadge}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="generateReport(${session.session_id})" class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors">
+                                            Generate Report
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                            tbody.insertAdjacentHTML('beforeend', row);
+                        });
+                        
+                        table.classList.remove('hidden');
+                    }
+                } else {
+                    loadingState.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    emptyState.querySelector('h3').textContent = 'Error loading sessions';
+                    emptyState.querySelector('p').textContent = 'Server returned status ' + response.status;
+                }
+            } catch (error) {
+                loadingState.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.querySelector('h3').textContent = 'Network Error';
+                emptyState.querySelector('p').textContent = 'Could not connect to the server.';
+            }
+        }
+
+        async function generateReport(sessionId) {
+            const token = localStorage.getItem('access_token');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}/report/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`Report generated successfully! Report ID: ${data.report_id}`);
+                    // In a real app, you might redirect to a detailed report view here
+                } else {
+                    const errorData = await response.json();
+                    alert(`Failed to generate report: ${errorData.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                alert('Network error while generating report.');
+            }
+        }
+    </script>
+</body>
+</html>
