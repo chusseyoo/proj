@@ -25,8 +25,18 @@ from ...domain.services.session_rules import SessionService
 
 def get_lecturer_id(request):
     """Extract lecturer ID from authenticated user."""
+    # If request.user is a Django model instance
     if hasattr(request.user, 'lecturer_profile'):
         return request.user.lecturer_profile.lecturer_id
+    
+    # If request.user is a domain entity (from JWTAuthentication)
+    if hasattr(request.user, 'user_id'):
+        from user_management.infrastructure.repositories import LecturerProfileRepository
+        repo = LecturerProfileRepository()
+        profile = repo.get_by_user_id(request.user.user_id)
+        if profile:
+            return profile.lecturer_profile_id
+            
     return None
 
 

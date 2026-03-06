@@ -70,6 +70,11 @@ class User:
         """Check if user is an admin."""
         return self.role == UserRole.ADMIN
     
+    @property
+    def is_authenticated(self) -> bool:
+        """Always return True for authenticated users. Required by DRF."""
+        return True
+    
     def activate(self) -> None:
         """Activate user account."""
         self.is_active = True
