@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Course - Geo-Attendance System</title>
+    <script src="tailwindcss.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7"></path>
+                            </svg>
+                        </div>
+                        <span class="font-bold text-xl text-gray-900">Geo-Attendance</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="lecturer-dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Dashboard</a>
+                        <a href="lecturer-courses.html" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">My Courses</a>
+                        <a href="lecturer-reports.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Reports</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="ml-3 relative flex items-center space-x-4">
+                        <span id="user-name" class="text-sm font-medium text-gray-700">Loading...</span>
+                        <button id="logout-btn" class="text-sm text-red-600 hover:text-red-800 font-medium">Sign out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-3xl mx-auto py-8 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="flex-1 min-w-0">
+                <nav class="flex text-gray-400 text-sm mb-2" aria-label="Breadcrumb">
+                    <a href="lecturer-courses.html" class="hover:text-gray-500">My Courses</a>
+                    <span class="mx-2">/</span>
+                    <span class="text-gray-700">Add Course</span>
+                </nav>
+                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">Add New Course</h2>
+                <p class="mt-1 text-sm text-gray-500">Create a new course to start managing attendance.</p>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div id="error-alert" class="hidden bg-red-50 border-l-4 border-red-500 p-4 m-6 mb-0 rounded-md">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p id="error-message" class="text-sm text-red-700">An error occurred.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="add-course-form" class="p-6">
+                <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label for="name" class="block text-sm font-medium text-gray-700">Course Name *</label>
+                        <input type="text" name="name" id="name" required class="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2">
+                    </div>
+
+                    <div>
+                        <label for="code" class="block text-sm font-medium text-gray-700">Course Code *</label>
+                        <input type="text" name="code" id="code" required placeholder="e.g. CS101" class="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2">
+                    </div>
+
+                    <div>
+                        <label for="credits" class="block text-sm font-medium text-gray-700">Credits</label>
+                        <input type="number" name="credits" id="credits" min="1" max="10" placeholder="e.g. 3" class="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="description" name="description" rows="3" class="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"></textarea>
+                    </div>
+                    
+                    <!-- We'll optionally load programs if the backend API supports linking a course directly to a program -->
+                    <div class="sm:col-span-2">
+                        <label for="program_id" class="block text-sm font-medium text-gray-700">Program (Optional)</label>
+                        <select id="program_id" name="program_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md p-2 bg-white">
+                            <option value="">None (or Select a Program)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-5 mt-5 border-t border-gray-200 flex justify-end">
+                    <a href="lecturer-courses.html" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3">Cancel</a>
+                    <button type="submit" id="submit-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <span id="btn-text">Add Course</span>
+                        <svg id="btn-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token || token === 'undefined' || token === 'null') {
+                window.location.href = 'lecturer-login.html';
+                return;
+            }
+
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                
+                const payload = JSON.parse(jsonPayload);
+                await fetchUserProfile(payload.user_id, token);
+                
+                // Fetch programs for the dropdown
+                const response = await fetch(`${API_BASE_URL}/api/academic-structure/v1/programs/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const programs = data.results || data;
+                    const select = document.getElementById('program_id');
+                    if (Array.isArray(programs)) {
+                        programs.forEach(program => {
+                            const option = document.createElement('option');
+                            option.value = program.id || program.program_id || program.code;
+                            option.textContent = program.name || program.program_name;
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+            }
+        });
+
+        async function fetchUserProfile(userId, token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('user-name').textContent = `${data.first_name} ${data.last_name}`;
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile:', error);
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = 'lecturer-login.html';
+        });
+
+        document.getElementById('add-course-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnSpinner = document.getElementById('btn-spinner');
+            const errorAlert = document.getElementById('error-alert');
+            const errorMessage = document.getElementById('error-message');
+
+            errorAlert.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75');
+            btnText.textContent = 'Adding...';
+            btnSpinner.classList.remove('hidden');
+
+            const token = localStorage.getItem('access_token');
+            
+            const programIdValue = document.getElementById('program_id').value;
+            const payload = {
+                name: document.getElementById('name').value,
+                code: document.getElementById('code').value,
+                description: document.getElementById('description').value,
+                credits: document.getElementById('credits').value ? parseInt(document.getElementById('credits').value) : null,
+            };
+            
+            if (programIdValue) {
+                payload.program_id = parseInt(programIdValue);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/academic-structure/v1/courses/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok || response.status === 201) {
+                    alert('Course added successfully!');
+                    window.location.href = 'lecturer-courses.html';
+                } else {
+                    let msg = data.message || 'Validation Error';
+                    if (data.details) {
+                        msg += ' - ' + JSON.stringify(data.details);
+                    } else if (data.name) {
+                        msg += ' - ' + data.name[0];
+                    } else if (data.code) {
+                        msg += ' - ' + data.code[0];
+                    }
+                    throw new Error(msg);
+                }
+
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorAlert.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75');
+                btnText.textContent = 'Add Course';
+                btnSpinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
