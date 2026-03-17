@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Session - Geo-Attendance System</title>
+    <title>Create Session - Attendance system</title>
     <script src="tailwindcss.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -20,7 +20,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7"></path>
                             </svg>
                         </div>
-                        <span class="font-bold text-xl text-gray-900">Geo-Attendance</span>
+                        <span class="font-bold text-xl text-gray-900">Attendance system</span>
                     </div>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                         <a href="lecturer-dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
@@ -216,10 +216,27 @@
                 const payload = JSON.parse(jsonPayload);
                 await fetchUserProfile(payload.user_id, token);
 
+                const lecturerProfile = await fetchLecturerProfile(payload.user_id, token);
+                const lecturerId = lecturerProfile?.lecturer_id || lecturerProfile?.lecturer_profile_id;
+                const hasAssignedCourses = await fetchAssignedCoursesForLecturer(token, lecturerId);
+
                 // Fetch Form Data Options
-                await fetchDropdownData(token, 'courses', 'course_id', 'Course');
                 await fetchDropdownData(token, 'programs', 'program_id', 'Program');
-                await fetchDropdownData(token, 'streams', 'stream_id', 'Stream');
+
+                const programSelect = document.getElementById('program_id');
+                programSelect.addEventListener('change', async (event) => {
+                    await fetchStreamsForProgram(token, event.target.value);
+                });
+
+                if (programSelect.value) {
+                    await fetchStreamsForProgram(token, programSelect.value);
+                }
+
+                if (!hasAssignedCourses) {
+                    const submitBtn = document.getElementById('submit-btn');
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                }
 
             } catch (error) {
                 console.error('Initialization error:', error);
@@ -242,6 +259,88 @@
             }
         }
 
+        async function fetchLecturerProfile(userId, token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/${userId}/lecturer-profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to fetch lecturer profile:', response.status);
+                    return null;
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch lecturer profile:', error);
+                return null;
+            }
+        }
+
+        function showNoAssignedCoursesMessage() {
+            const errorAlert = document.getElementById('error-alert');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = "You don't have courses assigned. Please contact the admin.";
+            errorAlert.classList.remove('hidden');
+        }
+
+        async function fetchAssignedCoursesForLecturer(token, lecturerId) {
+            const courseSelect = document.getElementById('course_id');
+            courseSelect.innerHTML = '<option value="" disabled selected>Select Course</option>';
+
+            if (!lecturerId) {
+                showNoAssignedCoursesMessage();
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/academic-structure/v1/courses/?lecturer_id=${encodeURIComponent(lecturerId)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to load assigned courses:', response.status);
+                    showNoAssignedCoursesMessage();
+                    return false;
+                }
+
+                const data = await response.json();
+                const courses = Array.isArray(data?.results)
+                    ? data.results
+                    : (Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []));
+
+                courses.forEach(course => {
+                    const optionValue = course.course_id ?? course.id;
+                    if (optionValue === undefined || optionValue === null || optionValue === '') {
+                        return;
+                    }
+
+                    const optionLabel = course.course_name || course.name || `Course ${optionValue}`;
+                    const option = document.createElement('option');
+                    option.value = optionValue;
+                    option.textContent = optionLabel;
+                    courseSelect.appendChild(option);
+                });
+
+                if (courses.length === 0) {
+                    showNoAssignedCoursesMessage();
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Failed to load assigned courses:', error);
+                showNoAssignedCoursesMessage();
+                return false;
+            }
+        }
+
         async function fetchDropdownData(token, endpoint, selectId, typeName) {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/academic-structure/v1/${endpoint}/`, {
@@ -249,18 +348,86 @@
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    const items = data.results || data; // handle paginated vs flat array
+                    const items = Array.isArray(data?.results)
+                        ? data.results
+                        : (Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : [])); // handle paginated vs flat array
                     
                     const select = document.getElementById(selectId);
                     items.forEach(item => {
+                        const valueKeyPriority = endpoint === 'programs'
+                            ? ['program_id', 'id', 'course_id', 'stream_id']
+                            : (endpoint === 'courses'
+                                ? ['course_id', 'id', 'program_id', 'stream_id']
+                                : (endpoint === 'streams'
+                                    ? ['stream_id', 'id', 'program_id', 'course_id']
+                                    : ['id', 'program_id', 'course_id', 'stream_id']));
+
+                        const labelKeyPriority = endpoint === 'programs'
+                            ? ['program_name', 'name', 'course_name', 'stream_name']
+                            : (endpoint === 'courses'
+                                ? ['course_name', 'name', 'program_name', 'stream_name']
+                                : (endpoint === 'streams'
+                                    ? ['stream_name', 'name', 'program_name', 'course_name']
+                                    : ['name', 'program_name', 'course_name', 'stream_name']));
+
+                        const optionValue = valueKeyPriority
+                            .map(key => item[key])
+                            .find(value => value !== undefined && value !== null && value !== '');
+                        if (optionValue === undefined || optionValue === null || optionValue === '') {
+                            return;
+                        }
+
+                        const optionLabel = labelKeyPriority
+                            .map(key => item[key])
+                            .find(value => typeof value === 'string' && value.trim() !== '') || `${typeName} ${optionValue}`;
                         const option = document.createElement('option');
-                        option.value = item.id;
-                        option.textContent = item.name || `${typeName} ${item.id}`; // Handle structure
+                        option.value = optionValue;
+                        option.textContent = optionLabel;
                         select.appendChild(option);
                     });
                 }
             } catch (error) {
                 console.error(`Failed to load ${endpoint}:`, error);
+            }
+        }
+
+        async function fetchStreamsForProgram(token, programId) {
+            const streamSelect = document.getElementById('stream_id');
+            streamSelect.innerHTML = '<option value="">All Streams (None specific)</option>';
+
+            if (!programId) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/academic-structure/v1/programs/${programId}/streams/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    console.error(`Failed to load streams for program ${programId}:`, response.status);
+                    return;
+                }
+
+                const data = await response.json();
+                const streams = Array.isArray(data?.results)
+                    ? data.results
+                    : (Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []));
+
+                streams.forEach(stream => {
+                    const optionValue = stream.stream_id ?? stream.id;
+                    if (optionValue === undefined || optionValue === null || optionValue === '') {
+                        return;
+                    }
+
+                    const optionLabel = stream.stream_name || stream.name || `Stream ${optionValue}`;
+                    const option = document.createElement('option');
+                    option.value = optionValue;
+                    option.textContent = optionLabel;
+                    streamSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error(`Failed to load streams for program ${programId}:`, error);
             }
         }
 

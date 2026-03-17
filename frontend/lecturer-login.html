@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecturer Login - Geo-Attendance System</title>
+    <title>Lecturer Login - Attendance system</title>
     <script src="tailwindcss.js"></script>
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen">
@@ -78,8 +78,10 @@
     </div>
 
     <script>
-        // Configuration: Point this to your Django backend URL
-        const API_BASE_URL = 'http://localhost:8000'; 
+        // Use same-origin backend so login works across dev ports (e.g., 8000/8001)
+        const API_BASE_URL = (window.location.origin && window.location.origin !== 'null')
+            ? window.location.origin
+            : 'http://localhost:8000';
 
         document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();

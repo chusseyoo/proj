@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Course - Geo-Attendance System</title>
+    <title>Add Course - Attendance system</title>
     <script src="tailwindcss.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -20,7 +20,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7"></path>
                             </svg>
                         </div>
-                        <span class="font-bold text-xl text-gray-900">Geo-Attendance</span>
+                        <span class="font-bold text-xl text-gray-900">Attendance system</span>
                     </div>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                         <a href="lecturer-dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Dashboard</a>
@@ -123,9 +123,20 @@
                 return;
             }
 
+            const errorAlert = document.getElementById('error-alert');
+            const errorMessage = document.getElementById('error-message');
+
+            const showProgramsLoadError = (message) => {
+                errorMessage.textContent = message;
+                errorAlert.classList.remove('hidden');
+            };
+
             try {
                 const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                while (base64.length % 4) {
+                    base64 += '=';
+                }
                 const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                 }).join(''));
@@ -140,22 +151,63 @@
                         'Accept': 'application/json'
                     }
                 });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const programs = data.results || data;
-                    const select = document.getElementById('program_id');
-                    if (Array.isArray(programs)) {
-                        programs.forEach(program => {
-                            const option = document.createElement('option');
-                            option.value = program.id || program.program_id || program.code;
-                            option.textContent = program.name || program.program_name;
-                            select.appendChild(option);
-                        });
+
+                if (!response.ok) {
+                    let details = '';
+                    try {
+                        const errorBody = await response.json();
+                        details = errorBody.message
+                            || errorBody.details
+                            || errorBody.detail
+                            || errorBody?.error?.message
+                            || errorBody?.error?.details
+                            || '';
+                    } catch (parseError) {
+                        console.error('Failed to parse program error response:', parseError);
                     }
+
+                    if (response.status === 401 || response.status === 403) {
+                        showProgramsLoadError('Session expired or unauthorized. Please sign in again.');
+                    } else {
+                        const baseMessage = `Failed to load programs (status ${response.status}).`;
+                        showProgramsLoadError(details ? `${baseMessage} ${details}` : baseMessage);
+                    }
+
+                    console.error('Failed to load programs:', response.status, details);
+                    return;
                 }
+
+                const data = await response.json();
+                const programs = Array.isArray(data?.results)
+                    ? data.results
+                    : (Array.isArray(data)
+                        ? data
+                        : (Array.isArray(data?.data)
+                            ? data.data
+                            : (Array.isArray(data?.data?.results) ? data.data.results : null)));
+                const select = document.getElementById('program_id');
+
+                if (!Array.isArray(programs)) {
+                    console.error('Unexpected programs response shape:', data);
+                    showProgramsLoadError('Failed to load programs due to an invalid server response.');
+                    return;
+                }
+
+                programs.forEach(program => {
+                    const optionValue = program.program_id ?? program.id;
+                    if (optionValue === undefined || optionValue === null || optionValue === '') {
+                        return;
+                    }
+
+                    const optionLabel = program.program_name || program.name || program.program_code || `Program ${optionValue}`;
+                    const option = document.createElement('option');
+                    option.value = optionValue;
+                    option.textContent = optionLabel;
+                    select.appendChild(option);
+                });
             } catch (error) {
                 console.error('Initialization error:', error);
+                showProgramsLoadError('Unable to load programs due to a network or initialization error.');
             }
         });
 
@@ -198,9 +250,10 @@
             
             const programIdValue = document.getElementById('program_id').value;
             const payload = {
-                name: document.getElementById('name').value,
-                code: document.getElementById('code').value,
+                course_name: document.getElementById('name').value,
+                course_code: document.getElementById('code').value,
                 description: document.getElementById('description').value,
+                department_name: "Computer Science", // Backend requires department_name
                 credits: document.getElementById('credits').value ? parseInt(document.getElementById('credits').value) : null,
             };
             

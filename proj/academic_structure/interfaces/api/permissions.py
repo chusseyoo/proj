@@ -12,6 +12,54 @@ Roles:
 from rest_framework import permissions
 
 
+def _is_admin_user(user):
+    """Support both ORM users and domain users from custom JWT auth."""
+    if not user:
+        return False
+
+    is_staff = getattr(user, 'is_staff', False)
+    if is_staff:
+        return True
+
+    role = getattr(user, 'role', None)
+    role_value = role.value if hasattr(role, 'value') else role
+    if role_value == 'Admin':
+        return True
+
+    is_admin_callable = getattr(user, 'is_admin', None)
+    if callable(is_admin_callable):
+        try:
+            return bool(is_admin_callable())
+        except TypeError:
+            return False
+
+    return False
+
+
+def _is_lecturer_user(user):
+    """Support both ORM users and domain users from custom JWT auth."""
+    if not user:
+        return False
+
+    role = getattr(user, 'role', None)
+    role_value = role.value if hasattr(role, 'value') else role
+    if role_value == 'Lecturer':
+        return True
+
+    is_lecturer_callable = getattr(user, 'is_lecturer', None)
+    if callable(is_lecturer_callable):
+        try:
+            if is_lecturer_callable():
+                return True
+        except TypeError:
+            pass
+
+    try:
+        return hasattr(user, 'lecturer_profile') and user.lecturer_profile is not None
+    except AttributeError:
+        return False
+
+
 class IsAdminUser(permissions.BasePermission):
     """Permission class that allows only Admin users.
     
@@ -28,8 +76,7 @@ class IsAdminUser(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         
-        # Check if user is staff (Django admin) or has admin role
-        return request.user.is_staff or getattr(request.user, 'role', None) == 'Admin'
+        return _is_admin_user(request.user)
 
 
 class IsLecturerOrAdmin(permissions.BasePermission):
@@ -53,24 +100,12 @@ class IsLecturerOrAdmin(permissions.BasePermission):
             return False
         
         # Check if user is admin
-        is_admin = request.user.is_staff or getattr(request.user, 'role', None) == 'Admin'
+        is_admin = _is_admin_user(request.user)
         
         if is_admin:
             return True
         
-        # Check if user is lecturer
-        is_lecturer = getattr(request.user, 'role', None) == 'Lecturer'
-        
-        # Alternative: Check if user has LecturerProfile
-        # This is safer if role field doesn't exist yet
-        if not is_lecturer:
-            try:
-                # Check if user has related lecturer profile
-                is_lecturer = hasattr(request.user, 'lecturer_profile') and request.user.lecturer_profile is not None
-            except AttributeError:
-                is_lecturer = False
-        
-        return is_lecturer
+        return _is_lecturer_user(request.user)
 
 
 class IsAssignedLecturerOrAdmin(permissions.BasePermission):
@@ -95,21 +130,13 @@ class IsAssignedLecturerOrAdmin(permissions.BasePermission):
             return False
         
         # Admin always has permission
-        is_admin = request.user.is_staff or getattr(request.user, 'role', None) == 'Admin'
+        is_admin = _is_admin_user(request.user)
         
         if is_admin:
             return True
         
         # Lecturer must be authenticated (object-level check in has_object_permission)
-        is_lecturer = getattr(request.user, 'role', None) == 'Lecturer'
-        
-        if not is_lecturer:
-            try:
-                is_lecturer = hasattr(request.user, 'lecturer_profile') and request.user.lecturer_profile is not None
-            except AttributeError:
-                is_lecturer = False
-        
-        return is_lecturer
+        return _is_lecturer_user(request.user)
     
     def has_object_permission(self, request, view, obj):
         """Check if user has permission for specific course object.
@@ -123,7 +150,7 @@ class IsAssignedLecturerOrAdmin(permissions.BasePermission):
             bool: True if user has permission, False otherwise
         """
         # Admin always has permission
-        is_admin = request.user.is_staff or getattr(request.user, 'role', None) == 'Admin'
+        is_admin = _is_admin_user(request.user)
         
         if is_admin:
             return True

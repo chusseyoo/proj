@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Courses - Geo-Attendance System</title>
+    <title>My Courses - Attendance system</title>
     <script src="tailwindcss.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -20,7 +20,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7"></path>
                             </svg>
                         </div>
-                        <span class="font-bold text-xl text-gray-900">Geo-Attendance</span>
+                        <span class="font-bold text-xl text-gray-900">Attendance system</span>
                     </div>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                         <a href="lecturer-dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
@@ -113,7 +113,8 @@
                 const userId = payload.user_id;
 
                 await fetchUserProfile(userId, token);
-                await fetchCourses(token);
+                const lecturerId = await fetchLecturerProfileId(userId, token);
+                await fetchCourses(token, lecturerId);
 
             } catch (error) {
                 console.error('Error initializing courses page:', error);
@@ -147,13 +148,47 @@
             }
         }
 
-        async function fetchCourses(token) {
+        async function fetchLecturerProfileId(userId, token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/${userId}/lecturer-profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to fetch lecturer profile:', response.status);
+                    return null;
+                }
+
+                const data = await response.json();
+                return data.lecturer_id ?? null;
+            } catch (error) {
+                console.error('Failed to fetch lecturer profile:', error);
+                return null;
+            }
+        }
+
+        async function fetchCourses(token, lecturerId) {
             const loadingState = document.getElementById('courses-loading');
             const emptyState = document.getElementById('courses-empty');
             const grid = document.getElementById('courses-grid');
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/academic-structure/v1/courses/`, {
+                const url = lecturerId
+                    ? `${API_BASE_URL}/api/academic-structure/v1/courses/?lecturer_id=${encodeURIComponent(lecturerId)}`
+                    : `${API_BASE_URL}/api/academic-structure/v1/courses/`;
+
+                if (!lecturerId) {
+                    loadingState.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    emptyState.querySelector('h3').textContent = 'No courses found';
+                    emptyState.querySelector('p').textContent = 'No lecturer profile found for this account.';
+                    return;
+                }
+
+                const response = await fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
@@ -162,7 +197,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    const courses = data.results || data;
+                    const courses = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
 
                     loadingState.classList.add('hidden');
 
@@ -171,19 +206,15 @@
                     } else {
                         grid.innerHTML = '';
                         courses.forEach(course => {
+                            const courseName = course.course_name || course.name || `Course ${course.course_id || course.id || ''}`;
+                            const courseCode = course.course_code || course.code || 'N/A';
                             const card = `
                                 <div class="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200">
                                     <div class="px-4 py-5 sm:px-6">
-                                        <h3 class="text-lg leading-6 font-medium text-gray-900">${course.name || 'Course ' + course.id}</h3>
-                                        <p class="mt-1 text-sm text-gray-500">Code: ${course.code || 'N/A'}</p>
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900">${courseName}</h3>
+                                        <p class="mt-1 text-sm text-gray-500">Code: ${courseCode}</p>
                                     </div>
-                                    <div class="px-4 py-4 sm:px-6">
-                                        <p class="text-sm text-gray-700">${course.description || 'No description available.'}</p>
-                                    </div>
-                                    <div class="px-4 py-4 sm:px-6 bg-gray-50 flex justify-between items-center">
-                                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Credits: ${course.credits || 'N/A'}</span>
-                                        <button class="text-sm text-blue-600 hover:text-blue-900 font-medium">View Details</button>
-                                    </div>
+                                    <div class="px-4 py-4 sm:px-6 bg-gray-50"></div>
                                 </div>
                             `;
                             grid.insertAdjacentHTML('beforeend', card);
