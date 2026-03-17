@@ -18,10 +18,17 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import RedirectView
+from django.views.generic import RedirectView, TemplateView
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/static/lecturer-login.html', permanent=False)),
+    path('', RedirectView.as_view(pattern_name='lecturer-login', permanent=False)),
+    path('lecturer/login', TemplateView.as_view(template_name='lecturer-login.html'), name='lecturer-login'),
+    path('lecturer/register', TemplateView.as_view(template_name='lecturer-register.html'), name='lecturer-register'),
+    path('lecturer/dashboard', TemplateView.as_view(template_name='lecturer-dashboard.html'), name='lecturer-dashboard'),
+    path('lecturer/courses', TemplateView.as_view(template_name='lecturer-courses.html'), name='lecturer-courses'),
+    path('lecturer/courses/add', TemplateView.as_view(template_name='lecturer-add-course.html'), name='lecturer-add-course'),
+    path('lecturer/sessions/create', TemplateView.as_view(template_name='lecturer-create-session.html'), name='lecturer-create-session'),
+    path('lecturer/reports', TemplateView.as_view(template_name='lecturer-reports.html'), name='lecturer-reports'),
     path('admin/', admin.site.urls),
     path('api/users/', include('user_management.interfaces.api.urls')),
     path('api/academic-structure/v1/', include('academic_structure.interfaces.api.urls')),

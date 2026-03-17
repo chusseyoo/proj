@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lecturer Login - Attendance system</title>
-    <script src="tailwindcss.js"></script>
+    <script src="{% static 'tailwindcss.js' %}"></script>
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen">
 
@@ -72,7 +73,7 @@
         <div class="mt-6 text-center">
             <p class="text-sm text-gray-600">
                 New lecturer? 
-                <a href="lecturer-register.html" class="font-medium text-blue-600 hover:text-blue-500">Create an account</a>
+                <a href="/lecturer/register" class="font-medium text-blue-600 hover:text-blue-500">Create an account</a>
             </p>
         </div>
     </div>
@@ -126,11 +127,7 @@
                     // Optional: Store user role to ensure they are a lecturer
                     // localStorage.setItem('user_role', data.role);
 
-                    // Redirect to the Lecturer Dashboard
-                    // Use relative path based on current location
-                    const currentPath = window.location.pathname;
-                    const newPath = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/lecturer-dashboard.html';
-                    window.location.href = newPath;
+                    window.location.href = '/lecturer/dashboard';
                 } else {
                     // Handle API errors (e.g., 401 Unauthorized)
                     throw new Error(data.detail || 'Invalid email or password. Please try again.');

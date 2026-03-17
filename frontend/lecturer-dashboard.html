@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lecturer Dashboard - Attendance system</title>
-    <script src="tailwindcss.js"></script>
+    <script src="{% static 'tailwindcss.js' %}"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -23,13 +24,13 @@
                         <span class="font-bold text-xl text-gray-900">Attendance system</span>
                     </div>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <a href="lecturer-dashboard.html" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="/lecturer/dashboard" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             Dashboard
                         </a>
-                        <a href="lecturer-courses.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="/lecturer/courses" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             My Courses
                         </a>
-                        <a href="lecturer-reports.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="/lecturer/reports" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             Reports
                         </a>
                     </div>
@@ -58,7 +59,7 @@
                 <p class="mt-1 text-sm text-gray-500">Here is an overview of your recent attendance sessions.</p>
             </div>
             <div class="mt-4 flex md:mt-0 md:ml-4">
-                <a href="lecturer-create-session.html" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="/lecturer/sessions/create" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -182,7 +183,7 @@
             
             if (!token || token === 'undefined' || token === 'null') {
                 // Not logged in, redirect to login page
-                window.location.href = 'lecturer-login.html';
+                window.location.href = '/lecturer/login';
                 return;
             }
 
@@ -211,9 +212,7 @@
                 // If token is invalid or expired, clear it and redirect
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
-                const currentPath = window.location.pathname;
-                const newPath = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/lecturer-login.html';
-                window.location.href = newPath;
+                window.location.href = '/lecturer/login';
             }
         });
 
@@ -221,9 +220,7 @@
         document.getElementById('logout-btn').addEventListener('click', () => {
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
-            const currentPath = window.location.pathname;
-            const newPath = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/lecturer-login.html';
-            window.location.href = newPath;
+            window.location.href = '/lecturer/login';
         });
 
         // Fetch User Profile

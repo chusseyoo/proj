@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lecturer Registration - Attendance system</title>
-    <script src="tailwindcss.js"></script>
+    <script src="{% static 'tailwindcss.js' %}"></script>
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen py-12">
 
@@ -111,7 +112,7 @@
         <div class="mt-6 text-center">
             <p class="text-sm text-gray-600">
                 Already have an account? 
-                <a href="lecturer-login.html" class="font-medium text-blue-600 hover:text-blue-500">Sign in here</a>
+                <a href="/lecturer/login" class="font-medium text-blue-600 hover:text-blue-500">Sign in here</a>
             </p>
         </div>
     </div>
@@ -169,7 +170,7 @@
                     
                     // Redirect to login page after 2 seconds
                     setTimeout(() => {
-                        window.location.href = 'lecturer-login.html';
+                        window.location.href = '/lecturer/login';
                     }, 2000);
                 } else {
                     // Handle API errors (e.g., email already exists)
