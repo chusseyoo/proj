@@ -14,7 +14,7 @@ from typing import Dict
 
 from .in_memory_adapters import (
     InMemoryAcademicPort,
-    InMemoryEventPublisher,
+    EventDispatcher,
     InMemorySessionRepository,
     InMemoryUserPort,
 )
@@ -55,12 +55,31 @@ def build_inmemory_container(course_lecturer_map: dict | None = None, active_lec
     """Build in-memory adapters and return a container dict with adapters and use-cases.
 
     Useful for tests that want to inspect published events or repository contents.
+    
+    Automatically wires session.created event to notification generation via EventDispatcher.
     """
     repo = InMemorySessionRepository()
-    publisher = InMemoryEventPublisher()
     academic = InMemoryAcademicPort(course_lecturer_map=course_lecturer_map)
     users = InMemoryUserPort(active_lecturers=active_lecturers)
 
+    # Wire event handler for session.created -> notification generation
+    def handle_session_created(payload: dict):
+        """When a session is created, enqueue async notification generation."""
+        try:
+            from email_notifications.tasks import generate_notifications_for_session_task
+            
+            session_id = payload.get("session_id")
+            if not session_id:
+                return  # Silently skip if no session_id in event
+
+            generate_notifications_for_session_task.delay(session_id=session_id)
+        except Exception as e:
+            # Non-blocking: log and continue
+            # In production, this would be logged and monitored
+            import sys
+            print(f"[handle_session_created] Failed to generate notifications for session {payload.get('session_id')}: {e}", file=sys.stderr)
+    
+    publisher = EventDispatcher(handlers={"session.created": handle_session_created})
     usecases = build_app_usecases(repository=repo, academic_port=academic, user_port=users, publisher=publisher)
 
     container = {

@@ -18,6 +18,31 @@ class InMemoryEventPublisher:
         self.events.append({"name": name, "payload": payload})
 
 
+class EventDispatcher(InMemoryEventPublisher):
+    """Event publisher that records events and dispatches to registered handlers.
+    
+    Useful for wiring cross-context event handling (e.g., session.created → generate notifications).
+    """
+    def __init__(self, handlers: Optional[Dict[str, callable]] = None):
+        super().__init__()
+        self.handlers = handlers or {}
+    
+    def publish(self, name: str, payload: Dict):
+        # Record event (for test inspection)
+        super().publish(name, payload)
+        
+        # Dispatch to handler if registered
+        if name in self.handlers:
+            try:
+                handler = self.handlers[name]
+                handler(payload)
+            except Exception as e:
+                # Non-blocking: log and continue
+                # In production, this would be logged to monitoring system
+                import sys
+                print(f"[EventDispatcher] Handler failed for '{name}': {e}", file=sys.stderr)
+
+
 class InMemoryAcademicPort:
     """Simple stub that accepts any program/course/stream relationships needed by tests."""
 

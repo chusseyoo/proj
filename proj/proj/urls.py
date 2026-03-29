@@ -22,6 +22,7 @@ from django.views.generic import RedirectView, TemplateView
 
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='lecturer-login', permanent=False)),
+    path('student/scan', TemplateView.as_view(template_name='student-qr-scan.html'), name='student-qr-scan'),
     path('lecturer/login', TemplateView.as_view(template_name='lecturer-login.html'), name='lecturer-login'),
     path('lecturer/register', TemplateView.as_view(template_name='lecturer-register.html'), name='lecturer-register'),
     path('lecturer/dashboard', TemplateView.as_view(template_name='lecturer-dashboard.html'), name='lecturer-dashboard'),
@@ -34,6 +35,7 @@ urlpatterns = [
     path('api/academic-structure/v1/', include('academic_structure.interfaces.api.urls')),
     path('api/session-management/v1/', include('session_management.interfaces.api.urls')),
     path('', include('attendance_recording.urls')),
+    path('api/email-notifications/v1/', include('email_notifications.interfaces.api.urls')),
 ]
 
 if settings.DEBUG:
