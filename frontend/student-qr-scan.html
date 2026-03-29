@@ -1,0 +1,471 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Student QR Scan - Attendance system</title>
+    <script src="{% static 'tailwindcss.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-900">
+    <div id="notify-banner" role="status" aria-live="assertive" class="hidden fixed top-4 right-4 left-4 sm:left-auto sm:w-[26rem] z-50 rounded-xl border px-4 py-3 shadow-lg text-sm"></div>
+
+    <main class="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <header class="px-5 py-5 sm:px-8 sm:py-6 border-b border-slate-200 bg-gradient-to-r from-cyan-50 via-white to-emerald-50">
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Student Attendance QR Scanner</h1>
+                <p class="mt-2 text-sm text-slate-600">
+                    Use your camera to scan your student QR. This page supports phones and PCs and does not provide image upload fallback.
+                </p>
+            </header>
+
+            <section class="p-5 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                <div class="space-y-4">
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-300 bg-black aspect-[4/3] sm:aspect-video">
+                        <video id="camera-video" class="w-full h-full object-cover" playsinline muted></video>
+                        <div class="pointer-events-none absolute inset-0">
+                            <div class="absolute inset-x-6 inset-y-8 sm:inset-x-12 sm:inset-y-10 border-2 border-emerald-300/90 rounded-xl"></div>
+                            <div class="absolute inset-x-6 inset-y-8 sm:inset-x-12 sm:inset-y-10 rounded-xl shadow-[0_0_0_9999px_rgba(2,6,23,0.45)]"></div>
+                        </div>
+                        <div id="camera-overlay" class="absolute inset-x-0 bottom-0 bg-slate-900/70 text-white text-xs sm:text-sm px-4 py-2">
+                            Camera is idle
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        <button id="start-scan-btn" type="button" class="inline-flex items-center rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 transition">
+                            Start Camera Scan
+                        </button>
+                        <button id="stop-scan-btn" type="button" class="inline-flex items-center rounded-lg bg-slate-700 hover:bg-slate-800 text-white font-medium px-4 py-2 transition" disabled>
+                            Stop Scan
+                        </button>
+                        <button id="switch-camera-btn" type="button" class="inline-flex items-center rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium px-4 py-2 transition" disabled>
+                            Switch Camera
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-slate-500">
+                        Tip: hold the QR steady inside the highlighted frame. On desktop, use a webcam with good lighting.
+                    </p>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700">Attendance Link</label>
+                        <p class="mt-1 text-sm text-slate-600">This page uses the secure token from your attendance link automatically.</p>
+                    </div>
+
+                    <div>
+                        <label for="scanned-student-id" class="block text-sm font-semibold text-slate-700">Scanned Student ID</label>
+                        <input id="scanned-student-id" type="text" readonly class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm" placeholder="No QR scanned yet">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label for="latitude" class="block text-sm font-semibold text-slate-700">Latitude</label>
+                            <input id="latitude" type="text" readonly class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm" placeholder="Pending">
+                        </div>
+                        <div>
+                            <label for="longitude" class="block text-sm font-semibold text-slate-700">Longitude</label>
+                            <input id="longitude" type="text" readonly class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm" placeholder="Pending">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        <button id="refresh-location-btn" type="button" class="inline-flex items-center rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium px-4 py-2 transition">
+                            Refresh Location
+                        </button>
+                        <button id="submit-attendance-btn" type="button" class="inline-flex items-center rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 transition">
+                            Submit Attendance
+                        </button>
+                    </div>
+
+                    <div id="status-box" class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        Ready. Start camera scan to capture your QR code.
+                    </div>
+
+                    <div id="result-box" class="hidden rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        const ATTENDANCE_ENDPOINT = `${API_BASE_URL}/api/v1/attendance/mark`;
+
+        const video = document.getElementById('camera-video');
+        const overlay = document.getElementById('camera-overlay');
+        const statusBox = document.getElementById('status-box');
+        const resultBox = document.getElementById('result-box');
+        const scannedStudentIdInput = document.getElementById('scanned-student-id');
+        const latitudeInput = document.getElementById('latitude');
+        const longitudeInput = document.getElementById('longitude');
+
+        const startScanBtn = document.getElementById('start-scan-btn');
+        const stopScanBtn = document.getElementById('stop-scan-btn');
+        const switchCameraBtn = document.getElementById('switch-camera-btn');
+        const refreshLocationBtn = document.getElementById('refresh-location-btn');
+        const submitAttendanceBtn = document.getElementById('submit-attendance-btn');
+
+        let mediaStream = null;
+        let scanIntervalId = null;
+        let rafId = null;
+        let activeFacingMode = 'environment';
+        let scannerLocked = false;
+        let attendanceToken = '';
+        let notifyTimeoutId = null;
+
+        const notifyBanner = document.getElementById('notify-banner');
+
+        function showNotification(message, tone = 'success') {
+            if (notifyTimeoutId) {
+                window.clearTimeout(notifyTimeoutId);
+                notifyTimeoutId = null;
+            }
+
+            notifyBanner.textContent = message;
+            notifyBanner.className = 'fixed top-4 right-4 left-4 sm:left-auto sm:w-[26rem] z-50 rounded-xl border px-4 py-3 shadow-lg text-sm';
+
+            if (tone === 'error') {
+                notifyBanner.classList.add('border-red-300', 'bg-red-50', 'text-red-800');
+            } else {
+                notifyBanner.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-900');
+            }
+
+            if ('vibrate' in navigator && tone === 'success') {
+                navigator.vibrate(120);
+            }
+
+            notifyTimeoutId = window.setTimeout(() => {
+                notifyBanner.classList.add('hidden');
+            }, 5000);
+        }
+
+        function setStatus(message, tone = 'neutral') {
+            statusBox.textContent = message;
+            statusBox.className = 'rounded-xl px-4 py-3 text-sm';
+            if (tone === 'success') {
+                statusBox.classList.add('border', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-800');
+                return;
+            }
+            if (tone === 'error') {
+                statusBox.classList.add('border', 'border-red-300', 'bg-red-50', 'text-red-800');
+                return;
+            }
+            statusBox.classList.add('border', 'border-slate-200', 'bg-slate-50', 'text-slate-700');
+        }
+
+        function toggleScanningButtons(isScanning) {
+            startScanBtn.disabled = isScanning;
+            stopScanBtn.disabled = !isScanning;
+            switchCameraBtn.disabled = !isScanning;
+        }
+
+        function isSubmitReady() {
+            return Boolean(
+                attendanceToken &&
+                scannedStudentIdInput.value.trim()
+            );
+        }
+
+        function updateSubmitButtonState() {
+            if (isSubmitReady()) {
+                submitAttendanceBtn.disabled = false;
+                submitAttendanceBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                return;
+            }
+
+            submitAttendanceBtn.disabled = false;
+            submitAttendanceBtn.classList.add('opacity-60');
+        }
+
+        async function refreshLocation() {
+            if (!navigator.geolocation) {
+                setStatus('Geolocation is not supported on this browser.', 'error');
+                return;
+            }
+
+            setStatus('Getting your location...');
+            return new Promise((resolve) => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        latitudeInput.value = position.coords.latitude.toFixed(8);
+                        longitudeInput.value = position.coords.longitude.toFixed(8);
+                        setStatus('Location updated. You can now submit once QR is scanned.', 'success');
+                        updateSubmitButtonState();
+                        resolve(true);
+                    },
+                    (error) => {
+                        let message = 'Unable to get location.';
+                        if (error.code === error.PERMISSION_DENIED) {
+                            message = 'Location permission denied. Attendance submission requires location.';
+                        }
+                        if (error.code === error.TIMEOUT) {
+                            message = 'Location request timed out. Try again in an open area.';
+                        }
+                        setStatus(message, 'error');
+                        resolve(false);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0,
+                    }
+                );
+            });
+        }
+
+        async function startCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setStatus('Camera access is not supported by this browser.', 'error');
+                return false;
+            }
+
+            if (mediaStream) {
+                stopCamera();
+            }
+
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: activeFacingMode },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                };
+
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = mediaStream;
+                await video.play();
+
+                overlay.textContent = 'Camera ready. Scanning for QR code...';
+                toggleScanningButtons(true);
+                setStatus('Camera started. Position your student QR inside the frame.');
+                scannerLocked = false;
+                runScannerLoop();
+                return true;
+            } catch (error) {
+                console.error('Camera error:', error);
+                setStatus('Unable to access camera. Check browser permissions and device camera access.', 'error');
+                overlay.textContent = 'Camera unavailable';
+                return false;
+            }
+        }
+
+        function stopCamera() {
+            if (scanIntervalId) {
+                window.clearInterval(scanIntervalId);
+                scanIntervalId = null;
+            }
+            if (rafId) {
+                window.cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach((track) => track.stop());
+                mediaStream = null;
+            }
+
+            video.srcObject = null;
+            toggleScanningButtons(false);
+            overlay.textContent = 'Camera is idle';
+        }
+
+        function onQrDetected(rawValue) {
+            if (scannerLocked) {
+                return;
+            }
+
+            const normalized = rawValue.trim().toUpperCase();
+            const studentIdRegex = /^[A-Z]{3}\/[0-9]{6}$/;
+
+            if (!studentIdRegex.test(normalized)) {
+                setStatus(`Scanned value is not a valid student ID format (expected ABC/123456): ${rawValue}`, 'error');
+                return;
+            }
+
+            scannerLocked = true;
+            scannedStudentIdInput.value = normalized;
+            updateSubmitButtonState();
+            setStatus(`QR captured: ${normalized}`, 'success');
+            overlay.textContent = `Detected: ${normalized}`;
+            stopCamera();
+        }
+
+        function runScannerLoop() {
+            if ('BarcodeDetector' in window) {
+                runNativeScanner();
+                return;
+            }
+            runJsQrScanner();
+        }
+
+        async function runNativeScanner() {
+            let detector;
+            try {
+                detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+            } catch (error) {
+                runJsQrScanner();
+                return;
+            }
+
+            const scanFrame = async () => {
+                if (!mediaStream || scannerLocked) {
+                    return;
+                }
+                try {
+                    const barcodes = await detector.detect(video);
+                    if (barcodes.length > 0 && barcodes[0].rawValue) {
+                        onQrDetected(barcodes[0].rawValue);
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('BarcodeDetector scan frame failed:', error);
+                }
+                rafId = window.requestAnimationFrame(scanFrame);
+            };
+
+            rafId = window.requestAnimationFrame(scanFrame);
+        }
+
+        function runJsQrScanner() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+
+            scanIntervalId = window.setInterval(() => {
+                if (!mediaStream || scannerLocked || video.readyState < 2) {
+                    return;
+                }
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const qr = window.jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'attemptBoth'
+                });
+
+                if (qr && qr.data) {
+                    onQrDetected(qr.data);
+                }
+            }, 200);
+        }
+
+        async function submitAttendance() {
+            const scannedStudentId = scannedStudentIdInput.value.trim();
+            let latitude = latitudeInput.value.trim();
+            let longitude = longitudeInput.value.trim();
+
+            resultBox.classList.add('hidden');
+
+            if (!attendanceToken) {
+                setStatus('Missing token in link. Open this page from your attendance email link.', 'error');
+                showNotification('Missing attendance token in URL.', 'error');
+                return;
+            }
+
+            if (!scannedStudentId) {
+                setStatus('Scan your student QR before submitting attendance.', 'error');
+                showNotification('Scan your QR code first.', 'error');
+                return;
+            }
+
+            if (!latitude || !longitude) {
+                const gotLocation = await refreshLocation();
+                latitude = latitudeInput.value.trim();
+                longitude = longitudeInput.value.trim();
+                if (!gotLocation || !latitude || !longitude) {
+                    setStatus('Location is required to submit attendance. Please allow location access.', 'error');
+                    showNotification('Location required before submit.', 'error');
+                    return;
+                }
+            }
+
+            submitAttendanceBtn.disabled = true;
+            submitAttendanceBtn.textContent = 'Submitting...';
+            setStatus('Submitting attendance...');
+
+            try {
+                const response = await fetch(ATTENDANCE_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: attendanceToken,
+                        scanned_student_id: scannedStudentId,
+                        latitude,
+                        longitude,
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.success === false) {
+                    const errorMessage = data?.error?.message || data?.message || 'Attendance submission failed.';
+                    setStatus(errorMessage, 'error');
+                    updateSubmitButtonState();
+                    return;
+                }
+
+                setStatus('Attendance marked successfully.', 'success');
+                showNotification('Attendance recorded successfully.');
+                resultBox.innerHTML = `
+                    <p class="font-semibold">Attendance submitted successfully.</p>
+                    <p class="mt-1">Session ID: ${data?.data?.session_id ?? 'N/A'}</p>
+                    <p>Attendance ID: ${data?.data?.attendance_id ?? 'N/A'}</p>
+                    <p>Status: ${data?.data?.status ?? 'present'}</p>
+                `;
+                resultBox.classList.remove('hidden');
+            } catch (error) {
+                console.error('Submit error:', error);
+                setStatus('Network error while submitting attendance. Check connection and retry.', 'error');
+                updateSubmitButtonState();
+            } finally {
+                submitAttendanceBtn.textContent = 'Submit Attendance';
+                if (!resultBox.classList.contains('hidden')) {
+                    submitAttendanceBtn.disabled = true;
+                } else {
+                    updateSubmitButtonState();
+                }
+            }
+        }
+
+        function prefillTokenFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+            if (token) {
+                attendanceToken = token.trim();
+            } else {
+                setStatus('Missing token in link. Open this page from your attendance link.', 'error');
+            }
+            updateSubmitButtonState();
+        }
+
+        startScanBtn.addEventListener('click', startCamera);
+        stopScanBtn.addEventListener('click', () => {
+            stopCamera();
+            setStatus('Scanner stopped. Start camera scan when ready.');
+        });
+        switchCameraBtn.addEventListener('click', async () => {
+            activeFacingMode = activeFacingMode === 'environment' ? 'user' : 'environment';
+            await startCamera();
+        });
+        refreshLocationBtn.addEventListener('click', refreshLocation);
+        submitAttendanceBtn.addEventListener('click', submitAttendance);
+
+        window.addEventListener('beforeunload', stopCamera);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            prefillTokenFromQuery();
+            await refreshLocation();
+        });
+    </script>
+</body>
+</html>
