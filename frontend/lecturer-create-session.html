@@ -125,7 +125,7 @@
                 <!-- Time Window -->
                 <div class="mb-8">
                     <h3 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Time Window</h3>
-                    <p class="text-xs text-info text-gray-500 mb-4">Note: Session duration must be between 10 minutes and 24 hours.</p>
+                    <p class="text-xs text-info text-gray-500 mb-4">Note: Session duration is fixed at 30 minutes from the selected start time.</p>
                     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
                         <div>
                             <label for="time_created" class="block text-sm font-medium text-gray-700">Start Time *</label>
@@ -133,7 +133,7 @@
                         </div>
                         <div>
                             <label for="time_ended" class="block text-sm font-medium text-gray-700">End Time *</label>
-                            <input type="datetime-local" name="time_ended" id="time_ended" required class="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2">
+                            <input type="datetime-local" name="time_ended" id="time_ended" required readonly class="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 bg-gray-100 cursor-not-allowed">
                         </div>
                     </div>
                 </div>
@@ -185,6 +185,8 @@
 
     <script>
         const API_BASE_URL = 'http://localhost:8000';
+        const FIXED_SESSION_WINDOW_MINUTES = 30;
+        const FIXED_SESSION_WINDOW_MS = FIXED_SESSION_WINDOW_MINUTES * 60 * 1000;
 
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('access_token');
@@ -193,9 +195,9 @@
                 return;
             }
 
-            // Set default datetimes (Start: now, End: now + 1 hour)
+            // Set default datetimes (Start: now, End: now + 30 minutes)
             const now = new Date();
-            const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+            const fixedWindowEnd = new Date(now.getTime() + FIXED_SESSION_WINDOW_MS);
             
             // Format for datetime-local input: YYYY-MM-DDThh:mm
             const formatForInput = (date) => {
@@ -204,8 +206,30 @@
                 return localISOTime.slice(0, 16);
             };
 
-            document.getElementById('time_created').value = formatForInput(now);
-            document.getElementById('time_ended').value = formatForInput(oneHourLater);
+            const syncEndTimeWithFixedWindow = () => {
+                const startInput = document.getElementById('time_created');
+                const endInput = document.getElementById('time_ended');
+                if (!startInput.value) {
+                    return;
+                }
+
+                const startTime = new Date(startInput.value);
+                if (Number.isNaN(startTime.getTime())) {
+                    return;
+                }
+
+                const endTime = new Date(startTime.getTime() + FIXED_SESSION_WINDOW_MS);
+                endInput.value = formatForInput(endTime);
+            };
+
+            const startInput = document.getElementById('time_created');
+            const endInput = document.getElementById('time_ended');
+            endInput.readOnly = true;
+
+            startInput.value = formatForInput(now);
+            endInput.value = formatForInput(fixedWindowEnd);
+            startInput.addEventListener('change', syncEndTimeWithFixedWindow);
+            startInput.addEventListener('input', syncEndTimeWithFixedWindow);
 
             try {
                 // Fetch user data
@@ -494,14 +518,25 @@
             // We need to ensure dates are sent in ISO string format with Z to represent UTC depending on your backend expectation
             // Simple way to handle input dates:
             const rawStart = document.getElementById('time_created').value;
-            const rawEnd = document.getElementById('time_ended').value;
+            const startDate = new Date(rawStart);
+
+            if (Number.isNaN(startDate.getTime())) {
+                throw new Error('Please provide a valid start time.');
+            }
+
+            const enforcedEndDate = new Date(startDate.getTime() + FIXED_SESSION_WINDOW_MS);
+            document.getElementById('time_ended').value = (() => {
+                const tzOffset = enforcedEndDate.getTimezoneOffset() * 60000;
+                const localISOTime = (new Date(enforcedEndDate - tzOffset)).toISOString().slice(0, -1);
+                return localISOTime.slice(0, 16);
+            })();
             
             const payload = {
                 program_id: parseInt(document.getElementById('program_id').value),
                 course_id: parseInt(document.getElementById('course_id').value),
                 stream_id: document.getElementById('stream_id').value ? parseInt(document.getElementById('stream_id').value) : null,
-                time_created: new Date(rawStart).toISOString(),
-                time_ended: new Date(rawEnd).toISOString(),
+                time_created: startDate.toISOString(),
+                time_ended: enforcedEndDate.toISOString(),
                 latitude: parseFloat(document.getElementById('latitude').value),
                 longitude: parseFloat(document.getElementById('longitude').value),
                 location_description: document.getElementById('location_description').value
